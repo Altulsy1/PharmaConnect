@@ -1,45 +1,22 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>PharmaConnect - Pharmacy Management System</title>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-<link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&amp;family=Tajawal:wght@400;500;700&amp;family=Noto+Kufi+Arabic:wght@400;600;700&amp;family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/><style>
-:root {
-  --font-en: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  --font-ar: "Cairo", "Tajawal", "Noto Kufi Arabic", "Segoe UI", Tahoma, sans-serif;
-}
-
-/* Default: English */
-html, body { font-family: var(--font-en); }
-
-/* Arabic */
-html[lang="ar"], html[lang="ar"] body { font-family: var(--font-ar); }
-
-/* RTL helpers */
-html[dir="rtl"] body { direction: rtl; text-align: right; }
-html[dir="rtl"] .header-content { flex-direction: row-reverse; }
-html[dir="rtl"] .logo { flex-direction: row-reverse; }
-html[dir="rtl"] .user-controls { flex-direction: row-reverse; }
-html[dir="rtl"] .map-overlay { right: auto; left: 20px; }
-html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
-
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>PharmaConnect - Pharmacy Management System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+    <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700&family=Noto+Kufi+Arabic:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+    <style>
         :root {
+            --font-en: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            --font-ar: "Cairo", "Tajawal", "Noto Kufi Arabic", "Segoe UI", Tahoma, sans-serif;
             --primary-color: #2a9d8f;
             --secondary-color: #264653;
             --accent-color: #e9c46a;
@@ -51,17 +28,49 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
             --user-color: #4cc9f0;
             --pharmacy-color: #7209b7;
         }
-        
+
+        /* Default: English */
+        html, body { 
+            font-family: var(--font-en); 
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            height: 100%;
+        }
+
+        /* Arabic */
+        html[lang="ar"], html[lang="ar"] body { 
+            font-family: var(--font-ar); 
+        }
+
+        /* RTL helpers */
+        html[dir="rtl"] body { direction: rtl; text-align: right; }
+        html[dir="rtl"] .header-content { flex-direction: row-reverse; }
+        html[dir="rtl"] .logo { flex-direction: row-reverse; text-align: right; }
+        html[dir="rtl"] .logo > div { text-align: right; }
+        html[dir="rtl"] .user-controls { flex-direction: row-reverse; }
+        html[dir="rtl"] .map-overlay { right: auto; left: 20px; }
+        html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
+        html[dir="rtl"] .form-group label { text-align: right; }
+        html[dir="rtl"] .inventory-item { flex-direction: row-reverse; }
+        html[dir="rtl"] .inventory-controls { flex-direction: row-reverse; }
+        html[dir="rtl"] .modal-header { flex-direction: row-reverse; }
+        html[dir="rtl"] .close-modal { margin-left: 0; margin-right: auto; }
+
         body {
             background-color: #f5f7fa;
             color: var(--dark-color);
             line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
+            width: 100%;
         }
         
         /* Header Styles */
@@ -73,18 +82,21 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
             position: sticky;
             top: 0;
             z-index: 1000;
+            width: 100%;
         }
         
         .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
         }
         
         .logo {
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
         }
         
         .logo i {
@@ -95,6 +107,7 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
         .logo h1 {
             font-size: 1.8rem;
             font-weight: 700;
+            margin: 0;
         }
         
         .slogan {
@@ -107,6 +120,7 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
             display: flex;
             align-items: center;
             gap: 1rem;
+            flex-wrap: wrap;
         }
         
         .user-info {
@@ -125,6 +139,7 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
             justify-content: center;
             font-weight: bold;
             color: var(--secondary-color);
+            flex-shrink: 0;
         }
         
         .btn {
@@ -135,6 +150,11 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
             cursor: pointer;
             transition: all 0.3s;
             text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            white-space: nowrap;
         }
         
         .btn-outline {
@@ -170,16 +190,19 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
         /* Main Content */
         .main-content {
             display: flex;
-            min-height: calc(100vh - 120px);
+            flex: 1;
+            min-height: 0;
+            width: 100%;
         }
         
         /* Sidebar */
         .sidebar {
             width: 300px;
             background-color: white;
-            padding: 2rem 1.5rem;
+            padding: 1.5rem;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
             overflow-y: auto;
+            flex-shrink: 0;
         }
         
         .user-type-selector {
@@ -197,6 +220,9 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
             background-color: #f8f9fa;
             cursor: pointer;
             transition: all 0.3s;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
         }
         
         .user-type-btn.active {
@@ -226,6 +252,9 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
             margin-bottom: 1.5rem;
             padding-bottom: 0.5rem;
             border-bottom: 2px solid var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         
         .form-group {
@@ -245,6 +274,7 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
             border: 1px solid #ddd;
             border-radius: 6px;
             font-size: 1rem;
+            box-sizing: border-box;
         }
         
         .form-control:focus {
@@ -259,11 +289,14 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
             border-radius: 6px;
             margin-bottom: 1.5rem;
             border-left: 4px solid var(--user-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         
         .location-info i {
             color: var(--user-color);
-            margin-right: 0.5rem;
+            flex-shrink: 0;
         }
         
         .range-slider {
@@ -282,11 +315,14 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
         .map-container {
             flex: 1;
             position: relative;
+            min-height: 500px;
+            height: calc(100vh - 120px);
         }
         
         #map {
             height: 100%;
             width: 100%;
+            min-height: 500px;
         }
         
         .map-overlay {
@@ -298,12 +334,14 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             z-index: 1000;
-            max-width: 300px;
+            max-width: 250px;
+            font-size: 0.9rem;
         }
         
         .map-overlay h3 {
             color: var(--secondary-color);
             margin-bottom: 0.5rem;
+            font-size: 1.1rem;
         }
         
         /* Pharmacy Panel */
@@ -334,6 +372,7 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
             color: var(--primary-color);
             cursor: pointer;
             text-decoration: underline;
+            font-weight: 600;
         }
         
         /* Inventory Management */
@@ -365,6 +404,7 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
             align-items: center;
             padding: 0.8rem;
             border-bottom: 1px solid #eee;
+            gap: 1rem;
         }
         
         .inventory-item:last-child {
@@ -400,6 +440,7 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
             color: var(--danger-color);
             cursor: pointer;
             font-size: 1rem;
+            padding: 0.2rem;
         }
         
         /* Pharmacy List */
@@ -441,14 +482,16 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
             z-index: 2000;
             align-items: center;
             justify-content: center;
+            padding: 1rem;
+            box-sizing: border-box;
         }
         
         .modal-content {
             background-color: white;
-            width: 90%;
+            width: 100%;
             max-width: 500px;
             border-radius: 10px;
-            padding: 2rem;
+            padding: 1.5rem;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             max-height: 90vh;
             overflow-y: auto;
@@ -467,6 +510,12 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
             font-size: 1.5rem;
             cursor: pointer;
             color: #777;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         /* Responsive */
@@ -479,10 +528,108 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
                 width: 100%;
                 max-height: 400px;
                 overflow-y: auto;
+                padding: 1rem;
             }
             
             .map-container {
                 height: 500px;
+                min-height: 500px;
+                flex: none;
+            }
+            
+            .container {
+                padding: 0 15px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .logo {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .logo h1 {
+                font-size: 1.5rem;
+            }
+            
+            .user-controls {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .sidebar {
+                max-height: 350px;
+                padding: 1rem;
+            }
+            
+            .map-container {
+                height: 400px;
+                min-height: 400px;
+            }
+            
+            .map-overlay {
+                position: relative;
+                top: auto;
+                right: auto;
+                left: auto;
+                margin: 1rem;
+                max-width: none;
+            }
+            
+            .btn {
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+            
+            .container {
+                padding: 0 10px;
+            }
+            
+            .panel-title {
+                font-size: 1.1rem;
+            }
+            
+            .modal-content {
+                padding: 1rem;
+                margin: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .logo h1 {
+                font-size: 1.3rem;
+            }
+            
+            .slogan {
+                font-size: 0.9rem;
+            }
+            
+            .user-type-btn {
+                padding: 0.6rem;
+                font-size: 0.9rem;
+            }
+            
+            .form-control {
+                padding: 0.6rem;
+            }
+            
+            .map-container {
+                height: 350px;
+                min-height: 350px;
+            }
+            
+            .inventory-controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
             }
         }
         
@@ -518,6 +665,7 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
             transform: translateX(150%);
             transition: transform 0.5s ease;
             max-width: 350px;
+            width: calc(100% - 40px);
         }
         
         .notification.show {
@@ -535,221 +683,241 @@ html[dir="rtl"] .location-info i { margin-right: 0; margin-left: 0.5rem; }
         .notification.warning {
             border-left-color: var(--warning-color);
         }
+        
+        @media (max-width: 768px) {
+            .notification {
+                right: 10px;
+                left: 10px;
+                max-width: none;
+                width: auto;
+            }
+        }
     </style>
-</link></head>
+</head>
 <body>
-<!-- Header -->
-<header>
-<div class="container">
-<div class="header-content">
-<div class="logo">
-<i class="fas fa-pills"></i>
-<div>
-<h1>PharmaConnect</h1>
-<div class="slogan" data-i18n="slogan">Your medicine is never far away...</div>
-</div>
-</div>
-<div class="user-controls"><button aria-label="Toggle language" class="btn btn-outline" id="langToggleBtn">العربية</button>
-
-<div class="user-info" id="userInfo" style="display: none;">
-<div class="user-avatar" id="userAvatar">U</div>
-<span id="userEmail">user@example.com</span>
-</div>
-<button class="btn btn-outline" data-i18n="logout" id="logoutBtn" style="display: none;">Logout</button>
-</div>
-</div>
-</div>
-</header>
-<!-- Main Content -->
-<div class="main-content">
-<!-- Sidebar -->
-<div class="sidebar">
-<!-- User Type Selector -->
-<div class="user-type-selector">
-<div class="user-type-btn active" data-i18n="patient" data-type="patient">Patient</div>
-<div class="user-type-btn" data-i18n="pharmacyOwner" data-type="pharmacy">Pharmacy Owner</div>
-</div>
-<!-- Patient Panel -->
-<div class="panel patient-panel active" id="patientPanel">
-<h3 class="panel-title" data-i18n="findMedicine">
-<i class="fas fa-user-injured"></i> Find Medicine
-                </h3>
-<div class="location-info" id="locationInfo">
-<i class="fas fa-location-dot"></i>
-<span id="locationText">Detecting your location...</span>
-</div>
-<div class="form-group">
-<label data-i18n="searchRadius" for="searchRadius">Search Radius (km)</label>
-<input class="range-slider" id="searchRadius" max="20" min="1" type="range" value="5"/>
-<div class="range-value">
-<span id="radiusValue">5</span> km
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-pills"></i>
+                    <div>
+                        <h1>PharmaConnect</h1>
+                        <div class="slogan" data-i18n="slogan">Your medicine is never far away...</div>
                     </div>
-</div>
-<div class="form-group">
-<label data-i18n="searchMedication" for="medicineSearch">Search Medication</label>
-<input class="form-control" data-i18n-placeholder="enterMed" id="medicineSearch" placeholder="Enter medication name..." type="text"/>
-<div style="margin-top: 0.5rem;">
-<small>Try: <span class="sample-med" style="color: var(--primary-color); cursor: pointer;">Amoxicillin</span>, 
-                        <span class="sample-med" style="color: var(--primary-color); cursor: pointer;">Metformin</span></small>
-</div>
-</div>
-<button class="btn btn-primary" data-i18n="searchMedicineBtn" id="searchBtn" style="width: 100%;">
-<i class="fas fa-search"></i> Search Medicine
+                </div>
+                <div class="user-controls">
+                    <button aria-label="Toggle language" class="btn btn-outline" id="langToggleBtn">العربية</button>
+                    <div class="user-info" id="userInfo" style="display: none;">
+                        <div class="user-avatar" id="userAvatar">U</div>
+                        <span id="userEmail">user@example.com</span>
+                    </div>
+                    <button class="btn btn-outline" data-i18n="logout" id="logoutBtn" style="display: none;">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- User Type Selector -->
+            <div class="user-type-selector">
+                <div class="user-type-btn active" data-i18n="patient" data-type="patient">Patient</div>
+                <div class="user-type-btn" data-i18n="pharmacyOwner" data-type="pharmacy">Pharmacy Owner</div>
+            </div>
+            
+            <!-- Patient Panel -->
+            <div class="panel patient-panel active" id="patientPanel">
+                <h3 class="panel-title" data-i18n="findMedicine">
+                    <i class="fas fa-user-injured"></i> <span>Find Medicine</span>
+                </h3>
+                <div class="location-info" id="locationInfo">
+                    <i class="fas fa-location-dot"></i>
+                    <span id="locationText">Detecting your location...</span>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="searchRadius" for="searchRadius">Search Radius (km)</label>
+                    <input class="range-slider" id="searchRadius" max="20" min="1" type="range" value="5"/>
+                    <div class="range-value">
+                        <span id="radiusValue">5</span> km
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="searchMedication" for="medicineSearch">Search Medication</label>
+                    <input class="form-control" data-i18n-placeholder="enterMed" id="medicineSearch" placeholder="Enter medication name..." type="text"/>
+                    <div style="margin-top: 0.5rem;">
+                        <small data-i18n="trySamples">Try: </small>
+                        <span class="sample-med" style="color: var(--primary-color); cursor: pointer;">Amoxicillin</span>, 
+                        <span class="sample-med" style="color: var(--primary-color); cursor: pointer;">Metformin</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary" data-i18n="searchMedicineBtn" id="searchBtn" style="width: 100%;">
+                    <i class="fas fa-search"></i> <span>Search Medicine</span>
                 </button>
-<div class="pharmacy-list-container" data-i18n="availablePharmacies" id="patientResults" style="display: none;">
-<h4 style="margin: 1.5rem 0 1rem 0;">Available Pharmacies</h4>
-<div id="pharmacyResults">
-<!-- Results will be populated here -->
-</div>
-</div>
-</div>
-<!-- Pharmacy Owner Panel -->
-<div class="panel pharmacy-panel" id="pharmacyPanel">
-<!-- Authentication Section -->
-<div class="auth-section">
-<h3 class="panel-title">
-<i class="fas fa-store"></i> Pharmacy Portal
+                <div class="pharmacy-list-container" data-i18n="availablePharmacies" id="patientResults" style="display: none;">
+                    <h4 style="margin: 1.5rem 0 1rem 0;" data-i18n="availablePharmacies">Available Pharmacies</h4>
+                    <div id="pharmacyResults">
+                        <!-- Results will be populated here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pharmacy Owner Panel -->
+            <div class="panel pharmacy-panel" id="pharmacyPanel">
+                <!-- Authentication Section -->
+                <div class="auth-section">
+                    <h3 class="panel-title">
+                        <i class="fas fa-store"></i> <span data-i18n="pharmacyPortal">Pharmacy Portal</span>
                     </h3>
-<!-- Login Form -->
-<div class="auth-form active" id="loginForm">
-<div class="form-group">
-<label for="loginEmail">Email</label>
-<input class="form-control" id="loginEmail" placeholder="pharmacy@example.com" type="email"/>
-</div>
-<div class="form-group">
-<label for="loginPassword">Password</label>
-<input class="form-control" id="loginPassword" placeholder="••••••••" type="password"/>
-</div>
-<button class="btn btn-pharmacy" id="loginBtn" style="width: 100%;">
-<i class="fas fa-sign-in-alt"></i> Login
+                    
+                    <!-- Login Form -->
+                    <div class="auth-form active" id="loginForm">
+                        <div class="form-group">
+                            <label for="loginEmail" data-i18n="email">Email</label>
+                            <input class="form-control" id="loginEmail" placeholder="pharmacy@example.com" type="email"/>
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword" data-i18n="password">Password</label>
+                            <input class="form-control" id="loginPassword" placeholder="••••••••" type="password"/>
+                        </div>
+                        <button class="btn btn-pharmacy" id="loginBtn" style="width: 100%;">
+                            <i class="fas fa-sign-in-alt"></i> <span data-i18n="login">Login</span>
                         </button>
-<div class="switch-auth">
-                            Don't have an account? <a id="showRegister">Register Pharmacy</a>
-</div>
-<div style="text-align: center; margin-top: 1rem;">
-<button class="btn btn-outline" id="googleLoginBtn" style="width: 100%;">
-<i class="fab fa-google"></i> Sign in with Google
+                        <div class="switch-auth">
+                            <span data-i18n="dontHaveAccount">Don't have an account?</span> <a id="showRegister" data-i18n="registerPharmacy">Register Pharmacy</a>
+                        </div>
+                        <div style="text-align: center; margin-top: 1rem;">
+                            <button class="btn btn-outline" id="googleLoginBtn" style="width: 100%;">
+                                <i class="fab fa-google"></i> <span data-i18n="signInWithGoogle">Sign in with Google</span>
                             </button>
-</div>
-</div>
-<!-- Registration Form -->
-<div class="auth-form" id="registerForm">
-<div class="form-group">
-<label for="pharmacyName">Pharmacy Name</label>
-<input class="form-control" id="pharmacyName" placeholder="HealthPlus Pharmacy" type="text"/>
-</div>
-<div class="form-group">
-<label for="pharmacyEmail">Email</label>
-<input class="form-control" id="pharmacyEmail" placeholder="pharmacy@example.com" type="email"/>
-</div>
-<div class="form-group">
-<label for="pharmacyPassword">Password</label>
-<input class="form-control" id="pharmacyPassword" placeholder="••••••••" type="password"/>
-</div>
-<div class="form-group">
-<label for="pharmacyPhone">Phone Number</label>
-<input class="form-control" id="pharmacyPhone" placeholder="(555) 123-4567" type="tel"/>
-</div>
-<div class="form-group">
-<label for="pharmacyAddress">Address</label>
-<input class="form-control" id="pharmacyAddress" placeholder="123 Main Street" type="text"/>
-</div>
-<button class="btn btn-pharmacy" id="registerBtn" style="width: 100%;">
-<i class="fas fa-store-alt"></i> Register Pharmacy
+                        </div>
+                    </div>
+                    
+                    <!-- Registration Form -->
+                    <div class="auth-form" id="registerForm">
+                        <div class="form-group">
+                            <label for="pharmacyName" data-i18n="pharmacyName">Pharmacy Name</label>
+                            <input class="form-control" id="pharmacyName" placeholder="HealthPlus Pharmacy" type="text"/>
+                        </div>
+                        <div class="form-group">
+                            <label for="pharmacyEmail" data-i18n="email">Email</label>
+                            <input class="form-control" id="pharmacyEmail" placeholder="pharmacy@example.com" type="email"/>
+                        </div>
+                        <div class="form-group">
+                            <label for="pharmacyPassword" data-i18n="password">Password</label>
+                            <input class="form-control" id="pharmacyPassword" placeholder="••••••••" type="password"/>
+                        </div>
+                        <div class="form-group">
+                            <label for="pharmacyPhone" data-i18n="phoneNumber">Phone Number</label>
+                            <input class="form-control" id="pharmacyPhone" placeholder="(555) 123-4567" type="tel"/>
+                        </div>
+                        <div class="form-group">
+                            <label for="pharmacyAddress" data-i18n="address">Address</label>
+                            <input class="form-control" id="pharmacyAddress" placeholder="123 Main Street" type="text"/>
+                        </div>
+                        <button class="btn btn-pharmacy" id="registerBtn" style="width: 100%;">
+                            <i class="fas fa-store-alt"></i> <span data-i18n="registerPharmacy">Register Pharmacy</span>
                         </button>
-<div class="switch-auth">
-                            Already have an account? <a id="showLogin">Login</a>
-</div>
-</div>
-</div>
-<!-- Inventory Management Section -->
-<div class="inventory-section" id="inventorySection">
-<h3 class="panel-title">
-<i class="fas fa-boxes"></i> Inventory Management
+                        <div class="switch-auth">
+                            <span data-i18n="alreadyHaveAccount">Already have an account?</span> <a id="showLogin" data-i18n="login">Login</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Inventory Management Section -->
+                <div class="inventory-section" id="inventorySection">
+                    <h3 class="panel-title">
+                        <i class="fas fa-boxes"></i> <span data-i18n="inventoryManagement">Inventory Management</span>
                     </h3>
-<div class="pharmacy-info" id="pharmacyInfo">
-<h4 id="loggedPharmacyName">HealthPlus Pharmacy</h4>
-<p id="loggedPharmacyAddress">123 Main Street</p>
-</div>
-<div class="inventory-controls">
-<input class="form-control" id="addMedicineInput" placeholder="Add medication..." type="text"/>
-<button class="btn btn-primary" id="addMedicineBtn">
-<i class="fas fa-plus"></i> Add
+                    <div class="pharmacy-info" id="pharmacyInfo">
+                        <h4 id="loggedPharmacyName">HealthPlus Pharmacy</h4>
+                        <p id="loggedPharmacyAddress">123 Main Street</p>
+                    </div>
+                    <div class="inventory-controls">
+                        <input class="form-control" id="addMedicineInput" data-i18n-placeholder="addMedicinePlaceholder" placeholder="Add medication..." type="text"/>
+                        <button class="btn btn-primary" id="addMedicineBtn" data-i18n="add">
+                            <i class="fas fa-plus"></i> <span>Add</span>
                         </button>
-</div>
-<div class="inventory-list" id="inventoryList">
-<!-- Inventory items will be populated here -->
-<div class="loading">
-<i class="fas fa-spinner"></i>
-<p>Loading inventory...</p>
-</div>
-</div>
-<div style="margin-top: 1.5rem;">
-<button class="btn btn-danger" id="removeOutOfStockBtn" style="width: 100%;">
-<i class="fas fa-trash-alt"></i> Remove Out of Stock Items
+                    </div>
+                    <div class="inventory-list" id="inventoryList">
+                        <!-- Inventory items will be populated here -->
+                        <div class="loading">
+                            <i class="fas fa-spinner"></i>
+                            <p data-i18n="loadingInventory">Loading inventory...</p>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1.5rem;">
+                        <button class="btn btn-danger" id="removeOutOfStockBtn" style="width: 100%;">
+                            <i class="fas fa-trash-alt"></i> <span data-i18n="removeOutOfStock">Remove Out of Stock Items</span>
                         </button>
-</div>
-</div>
-</div>
-</div>
-<!-- Map Container -->
-<div class="map-container">
-<div id="map"></div>
-<div class="map-overlay" id="mapOverlay">
-<h3 data-i18n="mapGuide"><i class="fas fa-map-marked-alt"></i> Map Guide</h3>
-<p><span style="color: var(--user-color);">●</span> Your Location</p>
-<p><span style="color: var(--primary-color);">●</span> Pharmacies</p>
-<p><span style="color: var(--pharmacy-color);">●</span> Your Pharmacy</p>
-<p><span style="color: var(--success-color);">●</span> Medicine Available</p>
-</div>
-</div>
-</div>
-<!-- Pharmacy Details Modal -->
-<div class="modal" id="pharmacyModal">
-<div class="modal-content">
-<div class="modal-header">
-<h2 id="modalPharmacyName">Pharmacy Details</h2>
-<button class="close-modal" id="closePharmacyModal">×</button>
-</div>
-<div class="modal-body">
-<div class="form-group">
-<p><strong>Address:</strong> <span id="modalPharmacyAddress">123 Main Street</span></p>
-<p><strong>Phone:</strong> <span id="modalPharmacyPhone">(555) 123-4567</span></p>
-<p><strong>Distance:</strong> <span id="modalPharmacyDistance">0.8 km</span></p>
-</div>
-<h4 style="margin: 1rem 0 0.5rem 0;">Available Medications</h4>
-<div id="modalMedicineList">
-<!-- Medications will be populated here -->
-</div>
-<div style="margin-top: 1.5rem;">
-<button class="btn btn-primary" id="getDirectionsBtn" style="width: 100%;">
-<i class="fas fa-directions"></i> Get Directions
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Map Container -->
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="map-overlay" id="mapOverlay">
+                <h3 data-i18n="mapGuide"><i class="fas fa-map-marked-alt"></i> <span>Map Guide</span></h3>
+                <p><span style="color: var(--user-color);">●</span> <span data-i18n="yourLocation">Your Location</span></p>
+                <p><span style="color: var(--primary-color);">●</span> <span data-i18n="pharmacies">Pharmacies</span></p>
+                <p><span style="color: var(--pharmacy-color);">●</span> <span data-i18n="yourPharmacy">Your Pharmacy</span></p>
+                <p><span style="color: var(--success-color);">●</span> <span data-i18n="medicineAvailable">Medicine Available</span></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pharmacy Details Modal -->
+    <div class="modal" id="pharmacyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalPharmacyName">Pharmacy Details</h2>
+                <button class="close-modal" id="closePharmacyModal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <p><strong data-i18n="address">Address:</strong> <span id="modalPharmacyAddress">123 Main Street</span></p>
+                    <p><strong data-i18n="phone">Phone:</strong> <span id="modalPharmacyPhone">(555) 123-4567</span></p>
+                    <p><strong data-i18n="distance">Distance:</strong> <span id="modalPharmacyDistance">0.8 km</span></p>
+                </div>
+                <h4 style="margin: 1rem 0 0.5rem 0;" data-i18n="availableMedications">Available Medications</h4>
+                <div id="modalMedicineList">
+                    <!-- Medications will be populated here -->
+                </div>
+                <div style="margin-top: 1.5rem;">
+                    <button class="btn btn-primary" id="getDirectionsBtn" style="width: 100%;">
+                        <i class="fas fa-directions"></i> <span data-i18n="getDirections">Get Directions</span>
                     </button>
-</div>
-</div>
-</div>
-</div>
-<!-- Notification -->
-<div class="notification" id="notification">
-<div class="notification-content">
-<strong id="notificationTitle">Notification</strong>
-<p id="notificationMessage">This is a notification message.</p>
-</div>
-</div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <div class="notification-content">
+            <strong id="notificationTitle">Notification</strong>
+            <p id="notificationMessage">This is a notification message.</p>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
         // Firebase Configuration
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyBNsJQZgS1J2d0oFhHAA1MR3nmmvCtJ-ME",
-  authDomain: "pharmaconnect-e89fa.firebaseapp.com",
-  databaseURL: "https://pharmaconnect-e89fa-default-rtdb.firebaseio.com",
-  projectId: "pharmaconnect-e89fa",
-  storageBucket: "pharmaconnect-e89fa.firebasestorage.app",
-  messagingSenderId: "100345757491",
-  appId: "1:100345757491:web:c7f3c1d93835f0dcabc846",
-  measurementId: "G-05J05FX4TH"
-};
+        const firebaseConfig = {
+            apiKey: "AIzaSyBNsJQZgS1J2d0oFhHAA1MR3nmmvCtJ-ME",
+            authDomain: "pharmaconnect-e89fa.firebaseapp.com",
+            databaseURL: "https://pharmaconnect-e89fa-default-rtdb.firebaseio.com",
+            projectId: "pharmaconnect-e89fa",
+            storageBucket: "pharmaconnect-e89fa.firebasestorage.app",
+            messagingSenderId: "100345757491",
+            appId: "1:100345757491:web:c7f3c1d93835f0dcabc846",
+            measurementId: "G-05J05FX4TH"
+        };
+        
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
@@ -766,11 +934,162 @@ const firebaseConfig = {
             markers: [],
             userMarker: null,
             searchRadius: 5,
-            selectedMedicine: ''
+            selectedMedicine: '',
+            radiusCircle: null
         };
+
+        // ===== i18n (AR/EN) =====
+        const i18n = {
+            en: {
+                slogan: "Your medicine is never far away...",
+                patient: "Patient",
+                pharmacyOwner: "Pharmacy Owner",
+                findMedicine: "Find Medicine",
+                searchRadius: "Search Radius (km)",
+                searchMedication: "Search Medication",
+                enterMed: "Enter medication name...",
+                searchMedicineBtn: "Search Medicine",
+                availablePharmacies: "Available Pharmacies",
+                mapGuide: "Map Guide",
+                yourLocation: "Your Location",
+                pharmacies: "Pharmacies",
+                yourPharmacy: "Your Pharmacy",
+                medicineAvailable: "Medicine Available",
+                logout: "Logout",
+                detectingLocation: "Detecting your location...",
+                defaultLocation: "Using default location. Enable location services for accurate results.",
+                pharmacyPortal: "Pharmacy Portal",
+                email: "Email",
+                password: "Password",
+                login: "Login",
+                dontHaveAccount: "Don't have an account?",
+                registerPharmacy: "Register Pharmacy",
+                signInWithGoogle: "Sign in with Google",
+                pharmacyName: "Pharmacy Name",
+                phoneNumber: "Phone Number",
+                address: "Address",
+                alreadyHaveAccount: "Already have an account?",
+                inventoryManagement: "Inventory Management",
+                addMedicinePlaceholder: "Add medication...",
+                add: "Add",
+                loadingInventory: "Loading inventory...",
+                removeOutOfStock: "Remove Out of Stock Items",
+                trySamples: "Try:",
+                distance: "Distance",
+                phone: "Phone",
+                availableMedications: "Available Medications",
+                getDirections: "Get Directions",
+                search: "Search",
+                noPharmaciesFound: "No pharmacies found",
+                noInventory: "No medications in inventory. Add some using the form above.",
+                highStock: "High Stock",
+                mediumStock: "Medium Stock",
+                lowStock: "Low Stock",
+                outOfStock: "Out of Stock"
+            },
+            ar: {
+                slogan: "دواءك ليس بعيداً أبداً...",
+                patient: "مريض",
+                pharmacyOwner: "صاحب صيدلية",
+                findMedicine: "البحث عن الدواء",
+                searchRadius: "نطاق البحث (كم)",
+                searchMedication: "بحث عن دواء",
+                enterMed: "أدخل اسم الدواء...",
+                searchMedicineBtn: "البحث عن دواء",
+                availablePharmacies: "الصيدليات المتوفرة",
+                mapGuide: "دليل الخريطة",
+                yourLocation: "موقعك",
+                pharmacies: "الصيدليات",
+                yourPharmacy: "صيدليتك",
+                medicineAvailable: "دواء متوفر",
+                logout: "تسجيل الخروج",
+                detectingLocation: "جاري تحديد موقعك...",
+                defaultLocation: "يتم استخدام موقع افتراضي. قم بتمكين خدمات الموقع للحصول على نتائج دقيقة.",
+                pharmacyPortal: "بوابة الصيدلية",
+                email: "البريد الإلكتروني",
+                password: "كلمة المرور",
+                login: "تسجيل الدخول",
+                dontHaveAccount: "ليس لديك حساب؟",
+                registerPharmacy: "تسجيل صيدلية",
+                signInWithGoogle: "تسجيل الدخول عبر جوجل",
+                pharmacyName: "اسم الصيدلية",
+                phoneNumber: "رقم الهاتف",
+                address: "العنوان",
+                alreadyHaveAccount: "لديك حساب بالفعل؟",
+                inventoryManagement: "إدارة المخزون",
+                addMedicinePlaceholder: "إضافة دواء...",
+                add: "إضافة",
+                loadingInventory: "جاري تحميل المخزون...",
+                removeOutOfStock: "حذف العناصر غير المتوفرة",
+                trySamples: "جرب:",
+                distance: "المسافة",
+                phone: "الهاتف",
+                availableMedications: "الأدوية المتوفرة",
+                getDirections: "الحصول على الاتجاهات",
+                search: "بحث",
+                noPharmaciesFound: "لم يتم العثور على صيدليات",
+                noInventory: "لا توجد أدوية في المخزون. أضف بعض الأدوية باستخدام النموذج أعلاه.",
+                highStock: "مخزون مرتفع",
+                mediumStock: "مخزون متوسط",
+                lowStock: "مخزون منخفض",
+                outOfStock: "غير متوفر"
+            }
+        };
+
+        function applyLanguage(lang) {
+            const isAr = lang === "ar";
+            document.documentElement.lang = lang;
+            document.documentElement.dir = isAr ? "rtl" : "ltr";
+
+            const btn = document.getElementById("langToggleBtn");
+            if (btn) btn.textContent = isAr ? "English" : "العربية";
+
+            // Translate all elements with data-i18n attribute
+            document.querySelectorAll("[data-i18n]").forEach(el => {
+                const key = el.getAttribute("data-i18n");
+                const val = i18n[lang] && i18n[lang][key];
+                if (val) {
+                    // Check if element has child span for text
+                    const span = el.querySelector('span');
+                    if (span) {
+                        span.textContent = val;
+                    } else {
+                        el.textContent = val;
+                    }
+                }
+            });
+
+            // Translate placeholders
+            document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+                const key = el.getAttribute("data-i18n-placeholder");
+                const val = i18n[lang] && i18n[lang][key];
+                if (val) el.setAttribute("placeholder", val);
+            });
+
+            // Update location text if needed
+            if (document.getElementById('locationText').textContent.includes('Detecting')) {
+                document.getElementById('locationText').textContent = i18n[lang].detectingLocation;
+            }
+        }
+
+        function setupLanguageToggle() {
+            const saved = localStorage.getItem("lang") || "en";
+            applyLanguage(saved);
+
+            const btn = document.getElementById("langToggleBtn");
+            if (!btn) return;
+
+            btn.addEventListener("click", () => {
+                const current = document.documentElement.lang || "en";
+                const next = current === "ar" ? "en" : "ar";
+                localStorage.setItem("lang", next);
+                applyLanguage(next);
+            });
+        }
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', async function() {
+            setupLanguageToggle();
             initializeUI();
             initializeMap();
             await initializeLocation();
@@ -802,6 +1121,19 @@ const firebaseConfig = {
                 const medicine = document.getElementById('medicineSearch').value.trim();
                 if (medicine) {
                     searchMedicine(medicine);
+                } else {
+                    showNotification(i18n[document.documentElement.lang].search, 
+                        "Please enter a medication name to search.", 'warning');
+                }
+            });
+
+            // Enter key for search
+            document.getElementById('medicineSearch').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const medicine = this.value.trim();
+                    if (medicine) {
+                        searchMedicine(medicine);
+                    }
                 }
             });
 
@@ -821,8 +1153,8 @@ const firebaseConfig = {
             });
 
             document.getElementById('showLogin').addEventListener('click', function() {
-                document.getElementById('registerForm').classList.add('active');
-                document.getElementById('loginForm').classList.remove('active');
+                document.getElementById('registerForm').classList.remove('active');
+                document.getElementById('loginForm').classList.add('active');
             });
 
             // Login/Register buttons
@@ -870,17 +1202,29 @@ const firebaseConfig = {
 
         // Initialize Leaflet map
         function initializeMap() {
-            // Create map with default view (will be updated when location is available)
-            state.map = L.map('map').setView([0, 0], 13);
+            // Create map with default view
+            state.map = L.map('map').setView([0, 0], 2);
             
             // Add OpenStreetMap tile layer
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
             }).addTo(state.map);
+            
+            // Handle map resize on window resize
+            window.addEventListener('resize', function() {
+                setTimeout(() => {
+                    state.map.invalidateSize();
+                }, 100);
+            });
         }
 
         // Get user location using Geolocation API
         async function initializeLocation() {
+            const locationText = document.getElementById('locationText');
+            const locationInfo = document.getElementById('locationInfo');
+            const currentLang = document.documentElement.lang || 'en';
+            
             if (navigator.geolocation) {
                 try {
                     const position = await new Promise((resolve, reject) => {
@@ -908,16 +1252,16 @@ const firebaseConfig = {
                         })
                     })
                     .addTo(state.map)
-                    .bindPopup('Your Location')
+                    .bindPopup(i18n[currentLang].yourLocation)
                     .openPopup();
                     
                     // Add radius circle
                     updateUserRadiusCircle();
                     
                     // Update UI
-                    document.getElementById('locationText').textContent = 
-                        `Location: ${state.userLocation.lat.toFixed(4)}, ${state.userLocation.lng.toFixed(4)}`;
-                    document.getElementById('locationInfo').style.borderLeftColor = 'var(--user-color)';
+                    locationText.textContent = 
+                        `${i18n[currentLang].yourLocation}: ${state.userLocation.lat.toFixed(4)}, ${state.userLocation.lng.toFixed(4)}`;
+                    locationInfo.style.borderLeftColor = 'var(--user-color)';
                     
                 } catch (error) {
                     console.error('Geolocation error:', error);
@@ -925,22 +1269,20 @@ const firebaseConfig = {
                     state.userLocation = { lat: 40.7128, lng: -74.0060 };
                     state.map.setView([state.userLocation.lat, state.userLocation.lng], 13);
                     
-                    document.getElementById('locationText').textContent = 
-                        'Using default location. Enable location services for accurate results.';
-                    document.getElementById('locationInfo').style.borderLeftColor = 'var(--warning-color)';
+                    locationText.textContent = i18n[currentLang].defaultLocation;
+                    locationInfo.style.borderLeftColor = 'var(--warning-color)';
                     
-                    showNotification('Location Access Denied', 'Using default location. Enable location services for accurate results.', 'warning');
+                    showNotification('Location Access Denied', i18n[currentLang].defaultLocation, 'warning');
                 }
             } else {
                 // Geolocation not supported
                 state.userLocation = { lat: 40.7128, lng: -74.0060 };
                 state.map.setView([state.userLocation.lat, state.userLocation.lng], 13);
                 
-                document.getElementById('locationText').textContent = 
-                    'Geolocation not supported by your browser. Using default location.';
-                document.getElementById('locationInfo').style.borderLeftColor = 'var(--warning-color)';
+                locationText.textContent = i18n[currentLang].defaultLocation;
+                locationInfo.style.borderLeftColor = 'var(--warning-color)';
                 
-                showNotification('Geolocation Not Supported', 'Using default location.', 'warning');
+                showNotification('Geolocation Not Supported', i18n[currentLang].defaultLocation, 'warning');
             }
         }
 
@@ -962,7 +1304,7 @@ const firebaseConfig = {
             }
         }
 
-        // Load mock pharmacy data (in a real app, this would come from Firebase)
+        // Load mock pharmacy data
         function loadMockData() {
             state.pharmacies = [
                 {
@@ -1047,6 +1389,7 @@ const firebaseConfig = {
         // Search for medicine in pharmacies
         function searchMedicine(medicineName) {
             state.selectedMedicine = medicineName;
+            const currentLang = document.documentElement.lang || 'en';
             
             // Calculate distances and filter by radius
             const availablePharmacies = state.pharmacies.filter(pharmacy => {
@@ -1057,7 +1400,7 @@ const firebaseConfig = {
                 
                 if (!hasMedicine) return false;
                 
-                // Calculate distance (simplified - in real app use Haversine formula)
+                // Calculate distance
                 if (state.userLocation) {
                     const distance = calculateDistance(
                         state.userLocation.lat, state.userLocation.lng,
@@ -1079,16 +1422,16 @@ const firebaseConfig = {
             // Show notification
             if (availablePharmacies.length > 0) {
                 showNotification('Medicine Found!', 
-                    `${medicineName} is available at ${availablePharmacies.length} pharmacy(ies) within ${state.searchRadius}km.`, 
+                    `${medicineName} ${currentLang === 'ar' ? 'موجود في' : 'is available at'} ${availablePharmacies.length} ${currentLang === 'ar' ? 'صيدلية' : 'pharmacy(ies)'} ${currentLang === 'ar' ? 'ضمن' : 'within'} ${state.searchRadius}km.`, 
                     'success');
             } else {
                 showNotification('Medicine Not Found', 
-                    `${medicineName} is not available at nearby pharmacies. Try a different medication or increase search radius.`, 
+                    `${medicineName} ${currentLang === 'ar' ? 'غير متوفر في الصيدليات القريبة. حاول دواء آخر أو زد نطاق البحث.' : 'is not available at nearby pharmacies. Try a different medication or increase search radius.'}`, 
                     'error');
             }
         }
 
-        // Calculate distance between two coordinates (simplified)
+        // Calculate distance between two coordinates
         function calculateDistance(lat1, lon1, lat2, lon2) {
             const R = 6371; // Earth's radius in km
             const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -1107,6 +1450,11 @@ const firebaseConfig = {
             state.markers.forEach(marker => state.map.removeLayer(marker));
             state.markers = [];
             
+            // Add user marker if exists
+            if (state.userMarker) {
+                state.map.addLayer(state.userMarker);
+            }
+            
             // Add markers for available pharmacies
             pharmacies.forEach(pharmacy => {
                 // Find the medicine in inventory
@@ -1116,6 +1464,7 @@ const firebaseConfig = {
                 
                 let iconColor = 'var(--success-color)';
                 if (medicine.stock === 'low') iconColor = 'var(--warning-color)';
+                if (medicine.stock === 'medium') iconColor = 'var(--primary-color)';
                 
                 const marker = L.marker([pharmacy.location.lat, pharmacy.location.lng], {
                     icon: L.divIcon({
@@ -1143,18 +1492,22 @@ const firebaseConfig = {
                 }
                 state.map.fitBounds(bounds, { padding: [50, 50] });
             }
+            
+            // Update radius circle
+            updateUserRadiusCircle();
         }
 
         // Display search results in sidebar
         function displaySearchResults(pharmacies, medicineName) {
             const resultsContainer = document.getElementById('pharmacyResults');
             const patientResults = document.getElementById('patientResults');
+            const currentLang = document.documentElement.lang || 'en';
             
             if (pharmacies.length === 0) {
                 resultsContainer.innerHTML = `
                     <div style="text-align: center; padding: 2rem; color: #666;">
                         <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                        <p>No pharmacies found with "${medicineName}" within ${state.searchRadius}km.</p>
+                        <p>${i18n[currentLang].noPharmaciesFound} "${medicineName}" ${currentLang === 'ar' ? 'ضمن' : 'within'} ${state.searchRadius}km.</p>
                     </div>
                 `;
                 patientResults.style.display = 'block';
@@ -1175,10 +1528,10 @@ const firebaseConfig = {
                         </p>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span class="stock-status ${medicine.stock === 'high' ? 'stock-in' : medicine.stock === 'medium' ? 'stock-low' : 'stock-out'}">
-                                ${medicine.stock} stock • ${medicine.price}
+                                ${i18n[currentLang][medicine.stock + 'Stock'] || medicine.stock} • ${medicine.price}
                             </span>
                             <button class="btn btn-primary" style="padding: 0.3rem 0.8rem; font-size: 0.9rem;" onclick="showPharmacyDetails('${pharmacy.id}')">
-                                Details
+                                ${currentLang === 'ar' ? 'تفاصيل' : 'Details'}
                             </button>
                         </div>
                     </div>
@@ -1208,6 +1561,8 @@ const firebaseConfig = {
             
             if (!pharmacyObj) return;
             
+            const currentLang = document.documentElement.lang || 'en';
+            
             // Calculate distance if not already calculated
             if (!pharmacyObj.distance && state.userLocation) {
                 const distance = calculateDistance(
@@ -1222,7 +1577,7 @@ const firebaseConfig = {
             document.getElementById('modalPharmacyAddress').textContent = pharmacyObj.address;
             document.getElementById('modalPharmacyPhone').textContent = pharmacyObj.phone;
             document.getElementById('modalPharmacyDistance').textContent = 
-                pharmacyObj.distance ? `${pharmacyObj.distance}km` : 'Distance not available';
+                pharmacyObj.distance ? `${pharmacyObj.distance}km` : (currentLang === 'ar' ? 'المسافة غير متاحة' : 'Distance not available');
             
             // Update medicine list
             const medicineList = document.getElementById('modalMedicineList');
@@ -1233,22 +1588,23 @@ const firebaseConfig = {
                         <div style="display: flex; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid #eee;">
                             <span>${item.name}</span>
                             <span class="stock-status ${item.stock === 'high' ? 'stock-in' : item.stock === 'medium' ? 'stock-low' : 'stock-out'}">
-                                ${item.stock} • ${item.price}
+                                ${i18n[currentLang][item.stock + 'Stock'] || item.stock} • ${item.price}
                             </span>
                         </div>
                     `;
                 });
                 medicineList.innerHTML = html;
             } else {
-                medicineList.innerHTML = '<p style="color: #666; text-align: center;">No inventory data available.</p>';
+                medicineList.innerHTML = '<p style="color: #666; text-align: center;">' + (currentLang === 'ar' ? 'لا توجد بيانات للمخزون.' : 'No inventory data available.') + '</p>';
             }
             
             // Set up directions button
             document.getElementById('getDirectionsBtn').onclick = function() {
-                // In a real app, this would open Google Maps
                 const url = `https://www.google.com/maps/dir/?api=1&destination=${pharmacyObj.location.lat},${pharmacyObj.location.lng}`;
                 window.open(url, '_blank');
-                showNotification('Directions', 'Opening directions in Google Maps...', 'success');
+                showNotification(currentLang === 'ar' ? 'الاتجاهات' : 'Directions', 
+                    currentLang === 'ar' ? 'جاري فتح الاتجاهات في خرائط جوجل...' : 'Opening directions in Google Maps...', 
+                    'success');
             };
             
             // Show modal
@@ -1284,15 +1640,17 @@ const firebaseConfig = {
         async function handleLogin() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
+            const currentLang = document.documentElement.lang || 'en';
             
             if (!email || !password) {
-                showNotification('Login Error', 'Please enter both email and password.', 'error');
+                showNotification(currentLang === 'ar' ? 'خطأ في تسجيل الدخول' : 'Login Error', 
+                    currentLang === 'ar' ? 'الرجاء إدخال البريد الإلكتروني وكلمة المرور.' : 'Please enter both email and password.', 
+                    'error');
                 return;
             }
             
             try {
                 // In a real app, this would be actual Firebase authentication
-                // For prototype, we'll simulate successful login
                 if (email.includes('pharmacy')) {
                     // Simulate pharmacy owner login
                     const user = {
@@ -1303,12 +1661,17 @@ const firebaseConfig = {
                     
                     state.currentUser = user;
                     await checkPharmacyAccount(user.uid);
-                    showNotification('Login Successful', 'Welcome back to your pharmacy dashboard!', 'success');
+                    showNotification(currentLang === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Login Successful', 
+                        currentLang === 'ar' ? 'مرحباً بعودتك إلى لوحة تحكم الصيدلية!' : 'Welcome back to your pharmacy dashboard!', 
+                        'success');
                 } else {
-                    showNotification('Login Error', 'Please use a pharmacy account email.', 'error');
+                    showNotification(currentLang === 'ar' ? 'خطأ في تسجيل الدخول' : 'Login Error', 
+                        currentLang === 'ar' ? 'الرجاء استخدام بريد إلكتروني لحساب صيدلية.' : 'Please use a pharmacy account email.', 
+                        'error');
                 }
             } catch (error) {
-                showNotification('Login Failed', error.message, 'error');
+                showNotification(currentLang === 'ar' ? 'فشل تسجيل الدخول' : 'Login Failed', 
+                    error.message, 'error');
             }
         }
 
@@ -1319,17 +1682,16 @@ const firebaseConfig = {
             const password = document.getElementById('pharmacyPassword').value;
             const phone = document.getElementById('pharmacyPhone').value;
             const address = document.getElementById('pharmacyAddress').value;
+            const currentLang = document.documentElement.lang || 'en';
             
             // Validate inputs
             if (!name || !email || !password || !phone || !address) {
-                showNotification('Registration Error', 'Please fill in all fields.', 'error');
+                showNotification(currentLang === 'ar' ? 'خطأ في التسجيل' : 'Registration Error', 
+                    currentLang === 'ar' ? 'الرجاء ملء جميع الحقول.' : 'Please fill in all fields.', 'error');
                 return;
             }
             
             try {
-                // In a real app, this would create a Firebase user
-                // For prototype, we'll simulate registration
-                
                 // Generate a unique ID for the pharmacy
                 const pharmacyId = 'pharmacy_' + Date.now();
                 
@@ -1366,8 +1728,9 @@ const firebaseConfig = {
                 updateUIForLoggedInUser(user);
                 loadPharmacyInventory();
                 
-                showNotification('Registration Successful', 
-                    `Welcome ${name}! Your pharmacy has been registered.`, 'success');
+                showNotification(currentLang === 'ar' ? 'تم التسجيل بنجاح' : 'Registration Successful', 
+                    currentLang === 'ar' ? `مرحباً ${name}! تم تسجيل صيدليتك بنجاح.` : `Welcome ${name}! Your pharmacy has been registered.`, 
+                    'success');
                 
                 // Switch to pharmacy view
                 switchUserType('pharmacy');
@@ -1377,29 +1740,32 @@ const firebaseConfig = {
                 document.getElementById('registerForm').classList.add('active');
                 
             } catch (error) {
-                showNotification('Registration Failed', error.message, 'error');
+                showNotification(currentLang === 'ar' ? 'فشل التسجيل' : 'Registration Failed', 
+                    error.message, 'error');
             }
         }
 
         // Handle Google login
         async function handleGoogleLogin() {
-            showNotification('Google Login', 'This would open Google authentication in a real app.', 'warning');
-            // In a real app: 
-            // const provider = new firebase.auth.GoogleAuthProvider();
-            // await auth.signInWithPopup(provider);
+            const currentLang = document.documentElement.lang || 'en';
+            showNotification(currentLang === 'ar' ? 'تسجيل الدخول عبر جوجل' : 'Google Login', 
+                currentLang === 'ar' ? 'سيتم فتح نافذة مصادقة جوجل في التطبيق الحقيقي.' : 'This would open Google authentication in a real app.', 
+                'warning');
         }
 
         // Handle logout
         function handleLogout() {
+            const currentLang = document.documentElement.lang || 'en';
             state.currentUser = null;
             state.currentPharmacy = null;
             updateUIForLoggedOutUser();
-            showNotification('Logged Out', 'You have been successfully logged out.', 'success');
+            showNotification(currentLang === 'ar' ? 'تم تسجيل الخروج' : 'Logged Out', 
+                currentLang === 'ar' ? 'تم تسجيل خروجك بنجاح.' : 'You have been successfully logged out.', 
+                'success');
         }
 
         // Check if user has a pharmacy account
         async function checkPharmacyAccount(userId) {
-            // In a real app, this would query Firestore
             // For prototype, check if any pharmacy has this ownerId
             const pharmacy = state.pharmacies.find(p => p.ownerId === userId);
             
@@ -1474,7 +1840,7 @@ const firebaseConfig = {
                     })
                 })
                 .addTo(state.map)
-                .bindPopup('Your Location');
+                .bindPopup(i18n[document.documentElement.lang || 'en'].yourLocation);
             }
             
             // Add current pharmacy marker
@@ -1487,7 +1853,7 @@ const firebaseConfig = {
                     })
                 })
                 .addTo(state.map)
-                .bindPopup(`<b>Your Pharmacy:</b> ${state.currentPharmacy.name}`)
+                .bindPopup(`<b>${i18n[document.documentElement.lang || 'en'].yourPharmacy}:</b> ${state.currentPharmacy.name}`)
                 .openPopup();
                 
                 state.markers.push(marker);
@@ -1507,12 +1873,13 @@ const firebaseConfig = {
             
             const inventoryList = document.getElementById('inventoryList');
             const inventory = state.currentPharmacy.inventory || [];
+            const currentLang = document.documentElement.lang || 'en';
             
             if (inventory.length === 0) {
                 inventoryList.innerHTML = `
                     <div style="text-align: center; padding: 2rem; color: #666;">
                         <i class="fas fa-box-open" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                        <p>No medications in inventory. Add some using the form above.</p>
+                        <p>${i18n[currentLang].noInventory}</p>
                     </div>
                 `;
                 return;
@@ -1528,10 +1895,10 @@ const firebaseConfig = {
                         </div>
                         <div style="display: flex; align-items: center; gap: 1rem;">
                             <select class="stock-select" data-index="${index}" style="padding: 0.3rem; border-radius: 4px; border: 1px solid #ddd;">
-                                <option value="high" ${item.stock === 'high' ? 'selected' : ''}>High Stock</option>
-                                <option value="medium" ${item.stock === 'medium' ? 'selected' : ''}>Medium Stock</option>
-                                <option value="low" ${item.stock === 'low' ? 'selected' : ''}>Low Stock</option>
-                                <option value="out" ${item.stock === 'out' ? 'selected' : ''}>Out of Stock</option>
+                                <option value="high" ${item.stock === 'high' ? 'selected' : ''}>${i18n[currentLang].highStock}</option>
+                                <option value="medium" ${item.stock === 'medium' ? 'selected' : ''}>${i18n[currentLang].mediumStock}</option>
+                                <option value="low" ${item.stock === 'low' ? 'selected' : ''}>${i18n[currentLang].lowStock}</option>
+                                <option value="out" ${item.stock === 'out' ? 'selected' : ''}>${i18n[currentLang].outOfStock}</option>
                             </select>
                             <button class="remove-btn" data-index="${index}">
                                 <i class="fas fa-trash"></i>
@@ -1563,14 +1930,19 @@ const firebaseConfig = {
         function addMedicineToInventory() {
             const input = document.getElementById('addMedicineInput');
             const medicineName = input.value.trim();
+            const currentLang = document.documentElement.lang || 'en';
             
             if (!medicineName) {
-                showNotification('Error', 'Please enter a medication name.', 'error');
+                showNotification(currentLang === 'ar' ? 'خطأ' : 'Error', 
+                    currentLang === 'ar' ? 'الرجاء إدخال اسم الدواء.' : 'Please enter a medication name.', 
+                    'error');
                 return;
             }
             
             if (!state.currentPharmacy) {
-                showNotification('Error', 'No pharmacy account found.', 'error');
+                showNotification(currentLang === 'ar' ? 'خطأ' : 'Error', 
+                    currentLang === 'ar' ? 'لم يتم العثور على حساب صيدلية.' : 'No pharmacy account found.', 
+                    'error');
                 return;
             }
             
@@ -1594,7 +1966,9 @@ const firebaseConfig = {
             // Clear input
             input.value = '';
             
-            showNotification('Medicine Added', `${medicineName} has been added to your inventory.`, 'success');
+            showNotification(currentLang === 'ar' ? 'تمت إضافة الدواء' : 'Medicine Added', 
+                currentLang === 'ar' ? `تمت إضافة ${medicineName} إلى المخزون.` : `${medicineName} has been added to your inventory.`, 
+                'success');
         }
 
         // Update stock status
@@ -1604,7 +1978,10 @@ const firebaseConfig = {
             const medicineIndex = parseInt(index);
             if (medicineIndex >= 0 && medicineIndex < state.currentPharmacy.inventory.length) {
                 state.currentPharmacy.inventory[medicineIndex].stock = status;
-                showNotification('Stock Updated', 'Inventory updated successfully.', 'success');
+                const currentLang = document.documentElement.lang || 'en';
+                showNotification(currentLang === 'ar' ? 'تم تحديث المخزون' : 'Stock Updated', 
+                    currentLang === 'ar' ? 'تم تحديث المخزون بنجاح.' : 'Inventory updated successfully.', 
+                    'success');
             }
         }
 
@@ -1617,7 +1994,10 @@ const firebaseConfig = {
                 const medicineName = state.currentPharmacy.inventory[medicineIndex].name;
                 state.currentPharmacy.inventory.splice(medicineIndex, 1);
                 loadPharmacyInventory();
-                showNotification('Medicine Removed', `${medicineName} has been removed from inventory.`, 'success');
+                const currentLang = document.documentElement.lang || 'en';
+                showNotification(currentLang === 'ar' ? 'تم حذف الدواء' : 'Medicine Removed', 
+                    currentLang === 'ar' ? `تم حذف ${medicineName} من المخزون.` : `${medicineName} has been removed from inventory.`, 
+                    'success');
             }
         }
 
@@ -1630,8 +2010,10 @@ const firebaseConfig = {
             const removedCount = initialLength - state.currentPharmacy.inventory.length;
             
             loadPharmacyInventory();
-            showNotification('Inventory Cleaned', 
-                `${removedCount} out of stock item(s) removed from inventory.`, 'success');
+            const currentLang = document.documentElement.lang || 'en';
+            showNotification(currentLang === 'ar' ? 'تم تنظيف المخزون' : 'Inventory Cleaned', 
+                currentLang === 'ar' ? `تم حذف ${removedCount} عنصر غير متوفر من المخزون.` : `${removedCount} out of stock item(s) removed from inventory.`, 
+                'success');
         }
 
         // Show notification
@@ -1663,83 +2045,5 @@ const firebaseConfig = {
         window.showPharmacyDetails = showPharmacyDetails;
         window.closePharmacyModal = closePharmacyModal;
     </script>
-<script>// ===== i18n (AR/EN) =====
-const i18n = {
-  en: {
-    slogan: "Your medicine is never far away...",
-    patient: "Patient",
-    pharmacyOwner: "Pharmacy Owner",
-    findMedicine: "Find Medicine",
-    searchRadius: "Search Radius (km)",
-    searchMedication: "Search Medication",
-    enterMed: "Enter medication name...",
-    searchMedicineBtn: "Search Medicine",
-    availablePharmacies: "Available Pharmacies",
-    mapGuide: "Map Guide",
-    yourLocation: "Your Location",
-    pharmacies: "Pharmacies",
-    yourPharmacy: "Your Pharmacy",
-    medicineAvailable: "Medicine Available",
-    logout: "Logout"
-  },
-  ar: {
-    slogan: "دواؤك أقرب مما تتخيل...",
-    patient: "مريض",
-    pharmacyOwner: "مالك صيدلية",
-    findMedicine: "ابحث عن الدواء",
-    searchRadius: "نطاق البحث (كم)",
-    searchMedication: "ابحث عن دواء",
-    enterMed: "اكتب اسم الدواء...",
-    searchMedicineBtn: "ابحث",
-    availablePharmacies: "الصيدليات المتاحة",
-    mapGuide: "دليل الخريطة",
-    yourLocation: "موقعك",
-    pharmacies: "الصيدليات",
-    yourPharmacy: "صيدليتك",
-    medicineAvailable: "الدواء متوفر",
-    logout: "تسجيل الخروج"
-  }
-};
-
-function applyLanguage(lang) {
-  const isAr = lang === "ar";
-  document.documentElement.lang = lang;
-  document.documentElement.dir = isAr ? "rtl" : "ltr";
-
-  const btn = document.getElementById("langToggleBtn");
-  if (btn) btn.textContent = isAr ? "English" : "العربية";
-
-  document.querySelectorAll("[data-i18n]").forEach(el => {
-    const key = el.getAttribute("data-i18n");
-    const val = i18n[lang] && i18n[lang][key];
-    if (val) el.textContent = val;
-  });
-
-  document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
-    const key = el.getAttribute("data-i18n-placeholder");
-    const val = i18n[lang] && i18n[lang][key];
-    if (val) el.setAttribute("placeholder", val);
-  });
-}
-
-function setupLanguageToggle() {
-  const saved = localStorage.getItem("lang") || "en";
-  applyLanguage(saved);
-
-  const btn = document.getElementById("langToggleBtn");
-  if (!btn) return;
-
-  btn.addEventListener("click", () => {
-    const current = document.documentElement.lang || "en";
-    const next = current === "ar" ? "en" : "ar";
-    localStorage.setItem("lang", next);
-    applyLanguage(next);
-  });
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  setupLanguageToggle();
-});
-</script>
 </body>
 </html>
