@@ -2,17 +2,22 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+    <meta name="theme-color" content="#2a9d8f"/>
+    <meta name="description" content="PharmaConnect - نظام إدارة الصيدليات الذكي"/>
     <title>PharmaConnect - نظام إدارة الصيدليات</title>
+    
+    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+    
+    <!-- Leaflet CSS -->
     <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700&family=Noto+Kufi+Arabic:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             --font-ar: "Cairo", "Tajawal", "Noto Kufi Arabic", "Segoe UI", Tahoma, sans-serif;
@@ -31,13 +36,26 @@
             
             --border-radius: 12px;
             --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --box-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
             --transition: all 0.3s ease;
+            --tap-highlight: rgba(42, 157, 143, 0.1);
+            
+            /* Mobile safe areas */
+            --safe-area-top: env(safe-area-inset-top, 0px);
+            --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-area-left: env(safe-area-inset-left, 0px);
+            --safe-area-right: env(safe-area-inset-right, 0px);
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: var(--tap-highlight);
+        }
+        
+        html {
+            scroll-behavior: smooth;
         }
         
         body {
@@ -47,6 +65,8 @@
             line-height: 1.6;
             direction: rtl;
             overflow-x: hidden;
+            padding-top: var(--safe-area-top);
+            padding-bottom: var(--safe-area-bottom);
         }
         
         .container {
@@ -60,10 +80,17 @@
             background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
             color: white;
             padding: 1rem 0;
+            padding-top: calc(1rem + var(--safe-area-top));
             box-shadow: var(--box-shadow);
             position: sticky;
             top: 0;
             z-index: 1000;
+            transition: var(--transition);
+        }
+        
+        .header-scrolled {
+            padding: 0.7rem 0;
+            padding-top: calc(0.7rem + var(--safe-area-top));
         }
         
         .header-content {
@@ -103,7 +130,7 @@
             align-items: center;
             gap: 12px;
             flex-wrap: wrap;
-            flex-shrink: 0; /* منع الانضغاط */
+            flex-shrink: 0;
         }
         
         .user-info {
@@ -114,11 +141,15 @@
             padding: 6px 12px;
             border-radius: 20px;
             min-width: fit-content;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
         
         .user-avatar {
             width: 36px;
             height: 36px;
+            min-width: 36px;
+            min-height: 36px;
             border-radius: 50%;
             background-color: var(--accent-color);
             display: flex;
@@ -129,6 +160,7 @@
             font-size: 1.1rem;
         }
         
+        /* Buttons - Mobile Friendly */
         .btn {
             padding: 0.7rem 1.5rem;
             border-radius: var(--border-radius);
@@ -144,6 +176,13 @@
             justify-content: center;
             gap: 8px;
             white-space: nowrap;
+            min-height: 44px;
+            min-width: 44px;
+            touch-action: manipulation;
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
         }
         
         .btn-outline {
@@ -152,7 +191,8 @@
             color: white;
         }
         
-        .btn-outline:hover {
+        .btn-outline:hover,
+        .btn-outline:active {
             background: white;
             color: var(--secondary-color);
             transform: translateY(-2px);
@@ -163,10 +203,11 @@
             color: white;
         }
         
-        .btn-primary:hover {
+        .btn-primary:hover,
+        .btn-primary:active {
             background-color: var(--secondary-color);
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--box-shadow-lg);
         }
         
         .btn-danger {
@@ -188,6 +229,10 @@
             font-size: 1.5rem;
             cursor: pointer;
             padding: 8px;
+            min-width: 44px;
+            min-height: 44px;
+            align-items: center;
+            justify-content: center;
         }
         
         /* Main Content - Mobile Responsive */
@@ -204,12 +249,43 @@
             padding: 1.5rem;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
             overflow-y: auto;
-            transition: var(--transition);
+            overflow-x: hidden;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 999;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
         }
         
         .sidebar.collapsed {
             transform: translateX(100%);
             opacity: 0;
+        }
+        
+        /* Backdrop for mobile sidebar */
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 998;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .sidebar-backdrop.active {
+            opacity: 1;
         }
         
         .user-type-selector {
@@ -229,6 +305,11 @@
             cursor: pointer;
             transition: var(--transition);
             font-weight: 600;
+            user-select: none;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .user-type-btn.active {
@@ -254,8 +335,14 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
+        @keyframes slideInFromRight {
+            from { transform: translateX(20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
         .panel.active {
             display: block;
+            animation: slideInFromRight 0.3s ease;
         }
         
         .panel-title {
@@ -288,12 +375,20 @@
             font-size: 1rem;
             font-family: var(--font-ar);
             transition: var(--transition);
+            background-color: white;
+            -webkit-appearance: none;
+            appearance: none;
         }
         
         .form-control:focus {
             outline: none;
             border-color: var(--primary-color);
             box-shadow: 0 0 0 3px rgba(42, 157, 143, 0.1);
+        }
+        
+        .form-control:disabled {
+            background-color: #f8f9fa;
+            cursor: not-allowed;
         }
         
         .location-info {
@@ -310,6 +405,7 @@
         .location-info i {
             color: var(--user-color);
             font-size: 1.2rem;
+            flex-shrink: 0;
         }
         
         .range-slider {
@@ -333,6 +429,16 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         
+        .range-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
         .range-value {
             text-align: center;
             font-weight: 700;
@@ -347,11 +453,13 @@
             position: relative;
             height: calc(100vh - 120px);
             min-height: 400px;
+            overflow: hidden;
         }
         
         #map {
             height: 100%;
             width: 100%;
+            transition: all 0.3s ease;
         }
         
         .map-overlay {
@@ -365,9 +473,11 @@
             z-index: 1000;
             max-width: 300px;
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             cursor: pointer;
             transition: all 0.3s ease;
+            user-select: none;
         }
         
         .map-overlay.hidden {
@@ -479,6 +589,7 @@
             border-radius: var(--border-radius);
             padding: 0.5rem;
             background: white;
+            -webkit-overflow-scrolling: touch;
         }
         
         .inventory-item {
@@ -530,6 +641,11 @@
             padding: 5px;
             border-radius: 4px;
             transition: var(--transition);
+            min-width: 44px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .remove-btn:hover {
@@ -541,6 +657,7 @@
             margin-top: 1rem;
             max-height: 300px;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
         .pharmacy-list-item {
@@ -552,6 +669,11 @@
             cursor: pointer;
             transition: var(--transition);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            user-select: none;
+        }
+        
+        .pharmacy-list-item:active {
+            transform: scale(0.98);
         }
         
         .pharmacy-list-item:hover {
@@ -577,6 +699,8 @@
             align-items: center;
             justify-content: center;
             padding: 16px;
+            padding-top: calc(16px + var(--safe-area-top));
+            padding-bottom: calc(16px + var(--safe-area-bottom));
         }
         
         .modal-content {
@@ -586,9 +710,10 @@
             border-radius: var(--border-radius);
             padding: 1.5rem;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            max-height: 90vh;
+            max-height: calc(90vh - var(--safe-area-top) - var(--safe-area-bottom));
             overflow-y: auto;
             animation: modalAppear 0.3s ease;
+            -webkit-overflow-scrolling: touch;
         }
         
         @keyframes modalAppear {
@@ -611,16 +736,19 @@
             color: #777;
             line-height: 1;
             padding: 0;
-            width: 32px;
-            height: 32px;
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
             transition: var(--transition);
+            min-width: 44px;
+            min-height: 44px;
         }
         
-        .close-modal:hover {
+        .close-modal:hover,
+        .close-modal:active {
             background-color: #f0f0f0;
         }
         
@@ -632,29 +760,36 @@
             
             .sidebar {
                 width: 100%;
-                max-height: 60vh;
+                max-height: 70vh;
                 position: fixed;
-                top: 80px;
+                top: auto;
                 right: 0;
                 bottom: 0;
                 z-index: 999;
-                transform: translateX(0);
-                border-radius: 0;
+                transform: translateY(100%);
+                border-radius: var(--border-radius) var(--border-radius) 0 0;
                 padding: 1.5rem;
+                padding-bottom: calc(1.5rem + var(--safe-area-bottom));
+                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+            }
+            
+            .sidebar.open {
+                transform: translateY(0);
+                opacity: 1;
             }
             
             .sidebar.collapsed {
-                transform: translateX(100%);
+                transform: translateY(100%);
             }
             
             .map-container {
-                height: 50vh;
+                height: 60vh;
                 min-height: 300px;
                 width: 100%;
             }
             
             .mobile-menu-btn {
-                display: block;
+                display: flex;
             }
             
             .logo h1 {
@@ -665,15 +800,28 @@
                 justify-content: flex-end;
             }
             
+            .sidebar-backdrop {
+                display: block;
+            }
+            
             /* تحسين Map Overlay على الشاشات الصغيرة */
             .map-overlay {
-                top: 80px !important;
+                top: auto !important;
+                bottom: 20px !important;
+                left: 20px !important;
+                top: initial;
                 max-width: 250px;
                 font-size: 0.9rem;
                 padding: 0.8rem;
                 z-index: 500;
                 background-color: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(5px);
+                -webkit-backdrop-filter: blur(5px);
+            }
+            
+            /* تحسين الارتفاعات للشريط الجانبي على الجوال */
+            .sidebar.open {
+                max-height: 80vh;
             }
         }
         
@@ -693,11 +841,18 @@
             
             header {
                 padding: 0.8rem 0;
+                padding-top: calc(0.8rem + var(--safe-area-top));
+            }
+            
+            .header-scrolled {
+                padding: 0.5rem 0;
+                padding-top: calc(0.5rem + var(--safe-area-top));
             }
             
             /* زيادة ارتفاع الـ header عندما يكون المستخدم مسجل دخول */
             .logged-in header {
                 padding: 0.9rem 0;
+                padding-top: calc(0.9rem + var(--safe-area-top));
                 min-height: 70px;
             }
             
@@ -736,21 +891,18 @@
                 width: auto;
                 flex-wrap: nowrap;
                 overflow-x: auto;
+                overflow-y: hidden;
                 padding-bottom: 4px;
                 gap: 8px;
                 margin-top: 0;
                 order: 0;
                 justify-content: flex-start;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
             }
             
-            /* إضافة شريط تمرير صغير للرؤية */
             .user-controls::-webkit-scrollbar {
-                height: 3px;
-            }
-            
-            .user-controls::-webkit-scrollbar-thumb {
-                background-color: rgba(255, 255, 255, 0.3);
-                border-radius: 3px;
+                display: none;
             }
             
             .user-info {
@@ -773,10 +925,8 @@
             
             /* تحسين Map Overlay على الشاشات الصغيرة */
             .map-overlay {
-                top: auto !important;
-                bottom: 20px !important;
-                left: 20px !important;
-                top: initial;
+                bottom: 80px !important;
+                left: 15px !important;
                 max-width: 220px;
                 padding: 0.7rem;
                 background-color: rgba(255, 255, 255, 0.98);
@@ -788,6 +938,26 @@
             
             .modal-content {
                 padding: 1.2rem;
+                margin: 0;
+                border-radius: var(--border-radius) var(--border-radius) 0 0;
+            }
+            
+            .modal {
+                align-items: flex-end;
+                padding: 0;
+            }
+            
+            /* تحسين المسافات للشاشات الصغيرة */
+            .panel-title {
+                font-size: 1.2rem;
+            }
+            
+            .form-group {
+                margin-bottom: 1rem;
+            }
+            
+            .pharmacy-list-item {
+                padding: 0.8rem;
             }
         }
         
@@ -811,6 +981,7 @@
             
             .slogan {
                 font-size: 0.75rem;
+                display: none; /* إخفاء الشعار على الشاشات الصغيرة جداً */
             }
             
             .user-controls {
@@ -827,11 +998,14 @@
                 padding: 4px 8px;
                 font-size: 0.8rem;
                 gap: 5px;
+                display: none; /* إخفاء معلومات المستخدم على الشاشات الصغيرة */
             }
             
             .user-avatar {
-                width: 28px;
-                height: 28px;
+                width: 32px;
+                height: 32px;
+                min-width: 32px;
+                min-height: 32px;
                 font-size: 0.9rem;
             }
             
@@ -848,8 +1022,8 @@
                 max-width: 180px;
                 font-size: 0.8rem;
                 padding: 0.6rem;
-                bottom: 15px !important;
-                left: 15px !important;
+                bottom: 70px !important;
+                left: 10px !important;
             }
             
             .map-overlay.hidden {
@@ -863,7 +1037,7 @@
             }
             
             .map-overlay.hidden::after {
-                content: 'دليل';
+                content: '🗺️';
                 display: block;
                 text-align: center;
                 font-weight: bold;
@@ -871,6 +1045,29 @@
             }
             
             .user-type-btn {
+                padding: 0.7rem;
+                font-size: 0.9rem;
+            }
+            
+            .sidebar {
+                padding: 1rem;
+                padding-bottom: calc(1rem + var(--safe-area-bottom));
+            }
+            
+            .modal-content {
+                padding: 1rem;
+            }
+            
+            /* تحسين حجم النصوص على الشاشات الصغيرة جداً */
+            body {
+                font-size: 14px;
+            }
+            
+            .btn {
+                font-size: 0.85rem;
+            }
+            
+            .form-control {
                 padding: 0.7rem;
                 font-size: 0.9rem;
             }
@@ -911,6 +1108,9 @@
             display: flex;
             align-items: flex-start;
             gap: 12px;
+            pointer-events: all;
+            margin-left: var(--safe-area-left);
+            margin-bottom: var(--safe-area-bottom);
         }
         
         .notification.show {
@@ -946,6 +1146,10 @@
             z-index: 1002;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 90%;
+            text-align: center;
+            pointer-events: none;
+            margin-top: var(--safe-area-top);
         }
         
         .toast.show {
@@ -964,12 +1168,21 @@
             z-index: 100;
             display: none;
             border: 1px solid #ddd;
+            animation: fadeIn 0.2s ease;
         }
         
         .search-suggestion-item {
             padding: 0.8rem 1rem;
             cursor: pointer;
             transition: var(--transition);
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .search-suggestion-item:active {
+            background-color: #f0f0f0;
         }
         
         .search-suggestion-item:hover {
@@ -983,13 +1196,81 @@
             right: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.95);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 3000;
             display: none;
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            padding-top: var(--safe-area-top);
+            padding-bottom: var(--safe-area-bottom);
+        }
+        
+        /* Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
+        /* Focus styles for keyboard navigation */
+        *:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+        
+        /* Performance optimizations */
+        .will-change-transform {
+            will-change: transform;
+        }
+        
+        .will-change-opacity {
+            will-change: opacity;
+        }
+        
+        /* Smooth scrolling for iOS */
+        .scroll-smooth {
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Prevent text size adjustment on orientation change */
+        html {
+            -webkit-text-size-adjust: 100%;
+            -moz-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        
+        /* Improve button rendering on mobile */
+        button {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Fix for iOS form elements */
+        input,
+        textarea,
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            border-radius: 0;
+        }
+        
+        /* Performance class for hardware acceleration */
+        .hardware-accelerated {
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            perspective: 1000px;
         }
     </style>
 </head>
@@ -998,20 +1279,20 @@
     <header>
         <div class="container">
             <div class="header-content">
-                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="فتح/إغلاق القائمة">
                     <i class="fas fa-bars"></i>
                 </button>
                 <div class="logo">
-                    <i class="fas fa-pills"></i>
+                    <i class="fas fa-pills" aria-hidden="true"></i>
                     <div>
                         <h1>PharmaConnect</h1>
                         <div class="slogan" data-i18n="slogan">دواؤك أقرب مما تتخيل...</div>
                     </div>
                 </div>
                 <div class="user-controls">
-                    <button aria-label="Toggle language" class="btn btn-outline" id="langToggleBtn">English</button>
+                    <button aria-label="تبديل اللغة" class="btn btn-outline" id="langToggleBtn">English</button>
                     <div class="user-info" id="userInfo" style="display: none;">
-                        <div class="user-avatar" id="userAvatar">م</div>
+                        <div class="user-avatar" id="userAvatar" aria-hidden="true">م</div>
                         <span id="userEmail" style="font-size: 0.9rem;">user@example.com</span>
                     </div>
                     <button class="btn btn-outline" data-i18n="logout" id="logoutBtn" style="display: none;">تسجيل الخروج</button>
@@ -1020,43 +1301,46 @@
         </div>
     </header>
 
+    <!-- Sidebar Backdrop (Mobile Only) -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
     <!-- Main Content -->
     <div class="main-content">
         <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
             <!-- User Type Selector -->
             <div class="user-type-selector">
-                <div class="user-type-btn active" data-i18n="patient" data-type="patient">مريض</div>
-                <div class="user-type-btn" data-i18n="pharmacyOwner" data-type="pharmacy">مالك صيدلية</div>
+                <div class="user-type-btn active" data-i18n="patient" data-type="patient" role="tab" aria-selected="true" tabindex="0">مريض</div>
+                <div class="user-type-btn" data-i18n="pharmacyOwner" data-type="pharmacy" role="tab" aria-selected="false" tabindex="0">مالك صيدلية</div>
             </div>
             
             <!-- Patient Panel -->
-            <div class="panel patient-panel active" id="patientPanel">
+            <div class="panel patient-panel active" id="patientPanel" role="tabpanel" aria-labelledby="patient-tab">
                 <h3 class="panel-title" data-i18n="findMedicine">
-                    <i class="fas fa-user-injured"></i> ابحث عن الدواء
+                    <i class="fas fa-user-injured" aria-hidden="true"></i> ابحث عن الدواء
                 </h3>
                 <div class="location-info" id="locationInfo">
-                    <i class="fas fa-location-dot"></i>
+                    <i class="fas fa-location-dot" aria-hidden="true"></i>
                     <span id="locationText">جاري تحديد موقعك...</span>
                 </div>
                 <div class="form-group">
                     <label data-i18n="searchRadius" for="searchRadius">نطاق البحث (كم)</label>
-                    <input class="range-slider" id="searchRadius" max="20" min="1" type="range" value="5"/>
+                    <input class="range-slider" id="searchRadius" max="20" min="1" type="range" value="5" aria-valuemin="1" aria-valuemax="20" aria-valuenow="5"/>
                     <div class="range-value">
                         <span id="radiusValue">5</span> كم
                     </div>
                 </div>
                 <div class="form-group">
                     <label data-i18n="searchMedication" for="medicineSearch">ابحث عن دواء</label>
-                    <input class="form-control" data-i18n-placeholder="enterMed" id="medicineSearch" placeholder="اكتب اسم الدواء..." type="text"/>
-                    <div class="search-suggestions" id="searchSuggestions"></div>
+                    <input class="form-control" data-i18n-placeholder="enterMed" id="medicineSearch" placeholder="اكتب اسم الدواء..." type="text" autocomplete="off"/>
+                    <div class="search-suggestions" id="searchSuggestions" role="listbox" aria-label="اقتراحات البحث"></div>
                     <div style="margin-top: 0.5rem;">
-                        <small>جرب: <span class="sample-med" style="color: var(--primary-color); cursor: pointer;">أموكسيسيلين</span>, 
-                            <span class="sample-med" style="color: var(--primary-color); cursor: pointer;">ميتفورمين</span></small>
+                        <small>جرب: <span class="sample-med" style="color: var(--primary-color); cursor: pointer;" role="button" tabindex="0">أموكسيسيلين</span>, 
+                            <span class="sample-med" style="color: var(--primary-color); cursor: pointer;" role="button" tabindex="0">ميتفورمين</span></small>
                     </div>
                 </div>
                 <button class="btn btn-primary" data-i18n="searchMedicineBtn" id="searchBtn" style="width: 100%;">
-                    <i class="fas fa-search"></i> ابحث عن دواء
+                    <i class="fas fa-search" aria-hidden="true"></i> ابحث عن دواء
                 </button>
 
                 <div class="pharmacy-list-container" id="recentPharmaciesBox" style="margin-top: 1.5rem;">
@@ -1073,36 +1357,36 @@
             </div>
             
             <!-- Pharmacy Owner Panel -->
-            <div class="panel pharmacy-panel" id="pharmacyPanel">
+            <div class="panel pharmacy-panel" id="pharmacyPanel" role="tabpanel" aria-labelledby="pharmacy-tab" style="display: none;">
                 <!-- Authentication Section -->
                 <div class="auth-section">
                     <h3 class="panel-title">
-                        <i class="fas fa-store"></i> بوابة الصيدلية
+                        <i class="fas fa-store" aria-hidden="true"></i> بوابة الصيدلية
                     </h3>
                     <!-- Login Form -->
                     <div class="auth-form active" id="loginForm">
                         <div class="form-group">
                             <label for="loginEmail">البريد الإلكتروني</label>
-                            <input class="form-control" id="loginEmail" placeholder="pharmacy@example.com" type="email"/>
+                            <input class="form-control" id="loginEmail" placeholder="pharmacy@example.com" type="email" autocomplete="email"/>
                         </div>
                         <div class="form-group">
                             <label for="loginPassword">كلمة المرور</label>
                             <div style="position: relative;">
-                                <input class="form-control" id="loginPassword" placeholder="••••••••" type="password"/>
-                                <button type="button" id="toggleLoginPassword" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; cursor: pointer;">
-                                    <i class="far fa-eye"></i>
+                                <input class="form-control" id="loginPassword" placeholder="••••••••" type="password" autocomplete="current-password"/>
+                                <button type="button" id="toggleLoginPassword" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; cursor: pointer; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" aria-label="إظهار/إخفاء كلمة المرور">
+                                    <i class="far fa-eye" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </div>
                         <button class="btn btn-pharmacy" id="loginBtn" style="width: 100%;">
-                            <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+                            <i class="fas fa-sign-in-alt" aria-hidden="true"></i> تسجيل الدخول
                         </button>
                         <div class="switch-auth">
-                            ليس لديك حساب؟ <a id="showRegister">سجل صيدليتك</a>
+                            ليس لديك حساب؟ <a id="showRegister" role="button" tabindex="0">سجل صيدليتك</a>
                         </div>
                         <div style="text-align: center; margin-top: 1rem;">
                             <button class="btn btn-outline" id="googleLoginBtn" style="width: 100%;">
-                                <i class="fab fa-google"></i> تسجيل الدخول بحساب Google
+                                <i class="fab fa-google" aria-hidden="true"></i> تسجيل الدخول بحساب Google
                             </button>
                         </div>
                     </div>
@@ -1111,34 +1395,34 @@
                     <div class="auth-form" id="registerForm">
                         <div class="form-group">
                             <label for="pharmacyName">اسم الصيدلية</label>
-                            <input class="form-control" id="pharmacyName" placeholder="صيدلية الصحة" type="text"/>
+                            <input class="form-control" id="pharmacyName" placeholder="صيدلية الصحة" type="text" autocomplete="organization"/>
                         </div>
                         <div class="form-group">
                             <label for="pharmacyEmail">البريد الإلكتروني</label>
-                            <input class="form-control" id="pharmacyEmail" placeholder="pharmacy@example.com" type="email"/>
+                            <input class="form-control" id="pharmacyEmail" placeholder="pharmacy@example.com" type="email" autocomplete="email"/>
                         </div>
                         <div class="form-group">
                             <label for="pharmacyPassword">كلمة المرور</label>
                             <div style="position: relative;">
-                                <input class="form-control" id="pharmacyPassword" placeholder="••••••••" type="password"/>
-                                <button type="button" id="toggleRegisterPassword" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; cursor: pointer;">
-                                    <i class="far fa-eye"></i>
+                                <input class="form-control" id="pharmacyPassword" placeholder="••••••••" type="password" autocomplete="new-password"/>
+                                <button type="button" id="toggleRegisterPassword" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; cursor: pointer; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" aria-label="إظهار/إخفاء كلمة المرور">
+                                    <i class="far fa-eye" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </div>
                         <div class="form-group">
                             <label for="pharmacyPhone">رقم الهاتف</label>
-                            <input class="form-control" id="pharmacyPhone" placeholder="05xxxxxxxx" type="tel"/>
+                            <input class="form-control" id="pharmacyPhone" placeholder="05xxxxxxxx" type="tel" autocomplete="tel"/>
                         </div>
                         <div class="form-group">
                             <label for="pharmacyAddress">العنوان</label>
-                            <input class="form-control" id="pharmacyAddress" placeholder="شارع الملك فهد، الرياض" type="text"/>
+                            <input class="form-control" id="pharmacyAddress" placeholder="شارع الملك فهد، الرياض" type="text" autocomplete="street-address"/>
                         </div>
                         <button class="btn btn-pharmacy" id="registerBtn" style="width: 100%;">
-                            <i class="fas fa-store-alt"></i> تسجيل الصيدلية
+                            <i class="fas fa-store-alt" aria-hidden="true"></i> تسجيل الصيدلية
                         </button>
                         <div class="switch-auth">
-                            لديك حساب بالفعل؟ <a id="showLogin">تسجيل الدخول</a>
+                            لديك حساب بالفعل؟ <a id="showLogin" role="button" tabindex="0">تسجيل الدخول</a>
                         </div>
                     </div>
                 </div>
@@ -1146,28 +1430,28 @@
                 <!-- Inventory Management Section -->
                 <div class="inventory-section" id="inventorySection">
                     <h3 class="panel-title">
-                        <i class="fas fa-boxes"></i> إدارة المخزون
+                        <i class="fas fa-boxes" aria-hidden="true"></i> إدارة المخزون
                     </h3>
                     <div class="pharmacy-info" id="pharmacyInfo">
                         <h4 id="loggedPharmacyName">صيدلية الصحة</h4>
                         <p id="loggedPharmacyAddress">شارع الملك فهد، الرياض</p>
                     </div>
                     <div class="inventory-controls">
-                        <input class="form-control" id="addMedicineInput" placeholder="أضف دواء جديد..." type="text"/>
+                        <input class="form-control" id="addMedicineInput" placeholder="أضف دواء جديد..." type="text" autocomplete="off"/>
                         <button class="btn btn-primary" id="addMedicineBtn">
-                            <i class="fas fa-plus"></i> إضافة
+                            <i class="fas fa-plus" aria-hidden="true"></i> إضافة
                         </button>
                     </div>
                     <div class="inventory-list" id="inventoryList">
                         <!-- Inventory items will be populated here -->
                         <div class="loading">
-                            <i class="fas fa-spinner"></i>
+                            <i class="fas fa-spinner" aria-hidden="true"></i>
                             <p>جاري تحميل المخزون...</p>
                         </div>
                     </div>
                     <div style="margin-top: 1.5rem;">
                         <button class="btn btn-danger" id="removeOutOfStockBtn" style="width: 100%;">
-                            <i class="fas fa-trash-alt"></i> حذف الأدوية المنتهية
+                            <i class="fas fa-trash-alt" aria-hidden="true"></i> حذف الأدوية المنتهية
                         </button>
                     </div>
                 </div>
@@ -1176,9 +1460,9 @@
         
         <!-- Map Container -->
         <div class="map-container">
-            <div id="map"></div>
-            <div class="map-overlay" id="mapOverlay">
-                <h3 data-i18n="mapGuide"><i class="fas fa-map-marked-alt"></i> دليل الخريطة</h3>
+            <div id="map" aria-label="خريطة الصيدليات" role="application"></div>
+            <div class="map-overlay" id="mapOverlay" role="button" tabindex="0" aria-label="دليل الخريطة - اضغط للتصغير/التكبير">
+                <h3 data-i18n="mapGuide"><i class="fas fa-map-marked-alt" aria-hidden="true"></i> دليل الخريطة</h3>
                 <p><span style="color: var(--user-color);">●</span> <span data-i18n="yourLocation">موقعك</span></p>
                 <p><span style="color: var(--primary-color);">●</span> <span data-i18n="pharmacies">الصيدليات</span></p>
                 <p><span style="color: var(--pharmacy-color);">●</span> <span data-i18n="yourPharmacy">صيدليتك</span></p>
@@ -1188,11 +1472,11 @@
     </div>
 
     <!-- Pharmacy Details Modal -->
-    <div class="modal" id="pharmacyModal">
+    <div class="modal" id="pharmacyModal" role="dialog" aria-modal="true" aria-labelledby="modalPharmacyName">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="modalPharmacyName">تفاصيل الصيدلية</h2>
-                <button class="close-modal" id="closePharmacyModal">×</button>
+                <button class="close-modal" id="closePharmacyModal" aria-label="إغلاق النافذة">×</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
@@ -1201,12 +1485,12 @@
                     <p><strong>المسافة:</strong> <span id="modalPharmacyDistance">0.8 كم</span></p>
                 </div>
                 <h4 style="margin: 1rem 0 0.5rem 0;">الأدوية المتوفرة</h4>
-                <div id="modalMedicineList">
+                <div id="modalMedicineList" role="list" aria-label="قائمة الأدوية المتوفرة">
                     <!-- Medications will be populated here -->
                 </div>
                 <div style="margin-top: 1.5rem;">
                     <button class="btn btn-primary" id="getDirectionsBtn" style="width: 100%;">
-                        <i class="fas fa-directions"></i> احصل على الاتجاهات
+                        <i class="fas fa-directions" aria-hidden="true"></i> احصل على الاتجاهات
                     </button>
                 </div>
             </div>
@@ -1214,31 +1498,40 @@
     </div>
 
     <!-- Notification -->
-    <div class="notification" id="notification">
-        <i class="fas fa-info-circle" id="notificationIcon" style="font-size: 1.2rem;"></i>
+    <div class="notification" id="notification" role="alert" aria-live="polite">
+        <i class="fas fa-info-circle" id="notificationIcon" style="font-size: 1.2rem;" aria-hidden="true"></i>
         <div class="notification-content">
             <strong id="notificationTitle">إشعار</strong>
             <p id="notificationMessage">هذه رسالة إشعار.</p>
         </div>
-        <button id="closeNotification" style="background: none; border: none; color: #666; cursor: pointer; padding: 0;">
-            <i class="fas fa-times"></i>
+        <button id="closeNotification" style="background: none; border: none; color: #666; cursor: pointer; padding: 0; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" aria-label="إغلاق الإشعار">
+            <i class="fas fa-times" aria-hidden="true"></i>
         </button>
     </div>
 
     <!-- Toast Notification -->
-    <div class="toast" id="toast">
+    <div class="toast" id="toast" role="alert" aria-live="assertive">
         <span id="toastMessage">هذه رسالة عابرة</span>
     </div>
 
     <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <i class="fas fa-spinner fa-3x fa-spin" style="color: var(--primary-color); margin-bottom: 1rem;"></i>
+    <div class="loading-overlay" id="loadingOverlay" role="alert" aria-live="polite" aria-busy="true">
+        <i class="fas fa-spinner fa-3x fa-spin" style="color: var(--primary-color); margin-bottom: 1rem;" aria-hidden="true"></i>
         <p id="loadingText">جاري التحميل...</p>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
     <script>
+        // ==============================================
         // Firebase Configuration
+        // ==============================================
         const firebaseConfig = {
             apiKey: "AIzaSyBNsJQZgS1J2d0oFhHAA1MR3nmmvCtJ-ME",
             authDomain: "pharmaconnect-e89fa.firebaseapp.com",
@@ -1250,7 +1543,9 @@
             measurementId: "G-05J05FX4TH"
         };
 
+        // ==============================================
         // Initialize Firebase
+        // ==============================================
         const app = firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
@@ -1264,7 +1559,9 @@
             }
         });
 
+        // ==============================================
         // Application State
+        // ==============================================
         const state = {
             userLocation: null,
             userType: 'patient',
@@ -1274,10 +1571,13 @@
             map: null,
             markers: [],
             userMarker: null,
+            radiusCircle: null,
             searchRadius: 5,
             selectedMedicine: '',
-            isSidebarOpen: true,
-            currentLanguage: 'ar'
+            isSidebarOpen: false,
+            currentLanguage: 'ar',
+            isMobile: window.innerWidth <= 992,
+            isScrolled: false
         };
 
         // Common medicines for search suggestions
@@ -1287,18 +1587,166 @@
             'سيمفاستاتين', 'ديكلوفيناك', 'سيتالوبرام', 'فلوكونازول', 'كلاريثروميسين'
         ];
 
+        // Cache DOM elements for better performance
+        const DOM = {};
+
+        // ==============================================
         // Initialize the application
+        // ==============================================
         document.addEventListener('DOMContentLoaded', async function() {
+            // Cache DOM elements
+            cacheDOMElements();
+            
+            // Initialize UI
             initializeUI();
+            
+            // Check if mobile
+            checkMobileView();
+            
+            // Initialize Firebase Auth
             await initializeFirebaseAuth();
-            initializeMap();
+            
+            // Initialize Map
+            await initializeMap();
+            
+            // Initialize Location
             await initializeLocation();
-            loadPharmaciesFromFirestore();
+            
+            // Load pharmacies
+            await loadPharmaciesFromFirestore();
+            
+            // Setup Firestore listeners
             setupFirestoreListeners();
+            
+            // Setup language toggle
             setupLanguageToggle();
+            
+            // Setup scroll event
+            setupScrollEvent();
+            
+            // Setup resize observer
+            setupResizeObserver();
+            
+            // Setup visibility change handler
+            setupVisibilityHandler();
+            
+            // Initial render of recent pharmacies
+            renderRecentPharmacies();
         });
 
+        // ==============================================
+        // DOM Caching for Performance
+        // ==============================================
+        function cacheDOMElements() {
+            DOM.mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            DOM.sidebar = document.getElementById('sidebar');
+            DOM.sidebarBackdrop = document.getElementById('sidebarBackdrop');
+            DOM.medicineSearch = document.getElementById('medicineSearch');
+            DOM.searchSuggestions = document.getElementById('searchSuggestions');
+            DOM.searchBtn = document.getElementById('searchBtn');
+            DOM.pharmacyResults = document.getElementById('pharmacyResults');
+            DOM.patientResults = document.getElementById('patientResults');
+            DOM.recentPharmaciesList = document.getElementById('recentPharmaciesList');
+            DOM.mapOverlay = document.getElementById('mapOverlay');
+            DOM.notification = document.getElementById('notification');
+            DOM.loadingOverlay = document.getElementById('loadingOverlay');
+            DOM.toast = document.getElementById('toast');
+            DOM.modal = document.getElementById('pharmacyModal');
+        }
+
+        // ==============================================
+        // Check Mobile View
+        // ==============================================
+        function checkMobileView() {
+            state.isMobile = window.innerWidth <= 992;
+            
+            if (state.isMobile) {
+                // Close sidebar by default on mobile
+                DOM.sidebar.classList.add('collapsed');
+                DOM.sidebar.classList.remove('open');
+                state.isSidebarOpen = false;
+                
+                // Add backdrop for mobile
+                DOM.sidebarBackdrop.classList.remove('active');
+            } else {
+                // Open sidebar by default on desktop
+                DOM.sidebar.classList.remove('collapsed');
+                state.isSidebarOpen = true;
+            }
+        }
+
+        // ==============================================
+        // Setup Resize Observer
+        // ==============================================
+        function setupResizeObserver() {
+            let resizeTimer;
+            
+            window.addEventListener('resize', () => {
+                // Clear the timer
+                clearTimeout(resizeTimer);
+                
+                // Set a new timer
+                resizeTimer = setTimeout(() => {
+                    checkMobileView();
+                    
+                    // Revalidate map size
+                    if (state.map) {
+                        state.map.invalidateSize();
+                    }
+                    
+                    // Update sidebar position on mobile
+                    if (state.isMobile && state.isSidebarOpen) {
+                        DOM.sidebar.classList.add('open');
+                        DOM.sidebarBackdrop.classList.add('active');
+                    }
+                }, 250); // Debounce resize events
+            });
+        }
+
+        // ==============================================
+        // Setup Scroll Event
+        // ==============================================
+        function setupScrollEvent() {
+            let scrollTimer;
+            
+            window.addEventListener('scroll', () => {
+                if (!scrollTimer) {
+                    scrollTimer = setTimeout(() => {
+                        scrollTimer = null;
+                        const header = document.querySelector('header');
+                        if (window.scrollY > 50) {
+                            if (!state.isScrolled) {
+                                header.classList.add('header-scrolled');
+                                state.isScrolled = true;
+                            }
+                        } else {
+                            if (state.isScrolled) {
+                                header.classList.remove('header-scrolled');
+                                state.isScrolled = false;
+                            }
+                        }
+                    }, 100);
+                }
+            });
+        }
+
+        // ==============================================
+        // Setup Visibility Handler
+        // ==============================================
+        function setupVisibilityHandler() {
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && state.map) {
+                    // Invalidate map size when tab becomes visible
+                    setTimeout(() => {
+                        state.map.invalidateSize();
+                    }, 300);
+                }
+            });
+        }
+
+        // ==============================================
         // Initialize Firebase Authentication
+        // ==============================================
         async function initializeFirebaseAuth() {
             auth.onAuthStateChanged(async (user) => {
                 if (user) {
@@ -1314,13 +1762,15 @@
             });
         }
 
+        // ==============================================
         // Handle user signed in
+        // ==============================================
         async function handleUserSignedIn(user) {
             updateUIForLoggedInUser(user);
             
             // Check if user has a pharmacy account
             try {
-                const pharmacyDoc = await db.collection('pharmacies').where('ownerId', '==', user.uid).get();
+                const pharmacyDoc = await db.collection('pharmacies').where('ownerId', '==', user.uid).limit(1).get();
                 if (!pharmacyDoc.empty) {
                     const pharmacyData = pharmacyDoc.docs[0].data();
                     pharmacyData.id = pharmacyDoc.docs[0].id;
@@ -1335,16 +1785,33 @@
             }
         }
 
+        // ==============================================
         // Initialize UI Event Listeners
+        // ==============================================
         function initializeUI() {
             // Mobile menu toggle
-            document.getElementById('mobileMenuBtn').addEventListener('click', toggleSidebar);
+            DOM.mobileMenuBtn.addEventListener('click', toggleSidebar);
             
-            // User type selection
+            // Sidebar backdrop click (mobile only)
+            DOM.sidebarBackdrop.addEventListener('click', () => {
+                if (state.isMobile) {
+                    toggleSidebar();
+                }
+            });
+
+            // User type selection with keyboard support
             document.querySelectorAll('.user-type-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const type = this.getAttribute('data-type');
                     switchUserType(type);
+                });
+                
+                btn.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        const type = this.getAttribute('data-type');
+                        switchUserType(type);
+                    }
                 });
             });
 
@@ -1358,17 +1825,17 @@
             });
 
             // Medicine search with suggestions
-            const medicineSearch = document.getElementById('medicineSearch');
-            medicineSearch.addEventListener('input', function() {
+            DOM.medicineSearch.addEventListener('input', function() {
                 showSearchSuggestions(this.value);
             });
             
-            medicineSearch.addEventListener('focus', function() {
+            DOM.medicineSearch.addEventListener('focus', function() {
                 if (this.value.trim() !== '') {
                     showSearchSuggestions(this.value);
                 }
             });
             
+            // Close suggestions when clicking outside
             document.addEventListener('click', function(e) {
                 if (!e.target.closest('#medicineSearch') && !e.target.closest('#searchSuggestions')) {
                     hideSearchSuggestions();
@@ -1376,20 +1843,29 @@
             });
 
             // Search button
-            document.getElementById('searchBtn').addEventListener('click', function() {
-                const medicine = medicineSearch.value.trim();
+            DOM.searchBtn.addEventListener('click', function() {
+                const medicine = DOM.medicineSearch.value.trim();
                 if (medicine) {
                     searchMedicine(medicine);
                     hideSearchSuggestions();
                 }
             });
 
-            // Sample medicine clicks
+            // Sample medicine clicks with keyboard support
             document.querySelectorAll('.sample-med').forEach(item => {
                 item.addEventListener('click', function() {
                     const medName = this.textContent;
-                    document.getElementById('medicineSearch').value = medName;
+                    DOM.medicineSearch.value = medName;
                     searchMedicine(medName);
+                });
+                
+                item.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        const medName = this.textContent;
+                        DOM.medicineSearch.value = medName;
+                        searchMedicine(medName);
+                    }
                 });
             });
 
@@ -1408,29 +1884,13 @@
             document.getElementById('toggleLoginPassword').addEventListener('click', function() {
                 const passwordInput = document.getElementById('loginPassword');
                 const icon = this.querySelector('i');
-                if (passwordInput.type === 'password') {
-                    passwordInput.type = 'text';
-                    icon.classList.remove('fa-eye');
-                    icon.classList.add('fa-eye-slash');
-                } else {
-                    passwordInput.type = 'password';
-                    icon.classList.remove('fa-eye-slash');
-                    icon.classList.add('fa-eye');
-                }
+                togglePasswordVisibility(passwordInput, icon);
             });
             
             document.getElementById('toggleRegisterPassword').addEventListener('click', function() {
                 const passwordInput = document.getElementById('pharmacyPassword');
                 const icon = this.querySelector('i');
-                if (passwordInput.type === 'password') {
-                    passwordInput.type = 'text';
-                    icon.classList.remove('fa-eye');
-                    icon.classList.add('fa-eye-slash');
-                } else {
-                    passwordInput.type = 'password';
-                    icon.classList.remove('fa-eye-slash');
-                    icon.classList.add('fa-eye');
-                }
+                togglePasswordVisibility(passwordInput, icon);
             });
 
             // Login/Register buttons
@@ -1448,7 +1908,7 @@
 
             // Modal close buttons
             document.getElementById('closePharmacyModal').addEventListener('click', closePharmacyModal);
-            document.getElementById('pharmacyModal').addEventListener('click', function(e) {
+            DOM.modal.addEventListener('click', function(e) {
                 if (e.target === this) closePharmacyModal();
             });
             
@@ -1458,14 +1918,47 @@
             });
             
             // إخفاء/إظهار دليل الخريطة عند الضغط عليه
-            document.getElementById('mapOverlay').addEventListener('click', function() {
+            DOM.mapOverlay.addEventListener('click', function() {
                 this.classList.toggle('hidden');
+            });
+            
+            DOM.mapOverlay.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.classList.toggle('hidden');
+                }
+            });
+            
+            // Keyboard navigation for modal
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && DOM.modal.style.display === 'flex') {
+                    closePharmacyModal();
+                }
             });
         }
 
+        // ==============================================
+        // Toggle Password Visibility Helper
+        // ==============================================
+        function togglePasswordVisibility(passwordInput, icon) {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+                icon.setAttribute('aria-label', 'إخفاء كلمة المرور');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+                icon.setAttribute('aria-label', 'إظهار كلمة المرور');
+            }
+        }
+
+        // ==============================================
         // Show search suggestions
+        // ==============================================
         function showSearchSuggestions(query) {
-            const suggestionsContainer = document.getElementById('searchSuggestions');
+            const suggestionsContainer = DOM.searchSuggestions;
             if (!query.trim()) {
                 suggestionsContainer.style.display = 'none';
                 return;
@@ -1481,63 +1974,106 @@
             }
             
             suggestionsContainer.innerHTML = filtered.map(med => `
-                <div class="search-suggestion-item" data-med="${med}">
-                    <i class="fas fa-pills" style="margin-left: 8px; color: var(--primary-color);"></i>
+                <div class="search-suggestion-item" data-med="${med}" role="option" tabindex="0">
+                    <i class="fas fa-pills" style="margin-left: 8px; color: var(--primary-color);" aria-hidden="true"></i>
                     ${med}
                 </div>
             `).join('');
             
             suggestionsContainer.style.display = 'block';
             
-            // Add click events
+            // Add click and keyboard events
             suggestionsContainer.querySelectorAll('.search-suggestion-item').forEach(item => {
                 item.addEventListener('click', function() {
                     const med = this.getAttribute('data-med');
-                    document.getElementById('medicineSearch').value = med;
+                    DOM.medicineSearch.value = med;
                     searchMedicine(med);
                     suggestionsContainer.style.display = 'none';
+                });
+                
+                item.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        const med = this.getAttribute('data-med');
+                        DOM.medicineSearch.value = med;
+                        searchMedicine(med);
+                        suggestionsContainer.style.display = 'none';
+                    }
                 });
             });
         }
 
+        // ==============================================
         // Hide search suggestions
+        // ==============================================
         function hideSearchSuggestions() {
-            document.getElementById('searchSuggestions').style.display = 'none';
+            DOM.searchSuggestions.style.display = 'none';
         }
 
+        // ==============================================
         // Toggle sidebar on mobile
+        // ==============================================
         function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
             state.isSidebarOpen = !state.isSidebarOpen;
             
             if (state.isSidebarOpen) {
-                sidebar.classList.remove('collapsed');
-                document.getElementById('mobileMenuBtn').innerHTML = '<i class="fas fa-times"></i>';
+                DOM.sidebar.classList.remove('collapsed');
+                DOM.sidebar.classList.add('open');
+                DOM.mobileMenuBtn.innerHTML = '<i class="fas fa-times"></i>';
+                DOM.mobileMenuBtn.setAttribute('aria-label', 'إغلاق القائمة');
+                
+                if (state.isMobile) {
+                    DOM.sidebarBackdrop.classList.add('active');
+                    document.body.style.overflow = 'hidden'; // Prevent body scroll
+                }
             } else {
-                sidebar.classList.add('collapsed');
-                document.getElementById('mobileMenuBtn').innerHTML = '<i class="fas fa-bars"></i>';
+                DOM.sidebar.classList.add('collapsed');
+                DOM.sidebar.classList.remove('open');
+                DOM.mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+                DOM.mobileMenuBtn.setAttribute('aria-label', 'فتح القائمة');
+                
+                if (state.isMobile) {
+                    DOM.sidebarBackdrop.classList.remove('active');
+                    document.body.style.overflow = ''; // Restore body scroll
+                }
             }
             
             // Revalidate map after sidebar animation
             setTimeout(() => {
-                if (state.map) state.map.invalidateSize();
+                if (state.map) {
+                    state.map.invalidateSize();
+                    // Center map on user location if available
+                    if (state.userLocation) {
+                        state.map.setView([state.userLocation.lat, state.userLocation.lng], state.map.getZoom());
+                    }
+                }
             }, 300);
         }
 
+        // ==============================================
         // Switch between patient and pharmacy views
+        // ==============================================
         function switchUserType(type) {
             state.userType = type;
             
             // Update UI
             document.querySelectorAll('.user-type-btn').forEach(btn => {
                 btn.classList.remove('active');
+                btn.setAttribute('aria-selected', 'false');
             });
-            document.querySelector(`[data-type="${type}"]`).classList.add('active');
+            
+            const activeBtn = document.querySelector(`[data-type="${type}"]`);
+            activeBtn.classList.add('active');
+            activeBtn.setAttribute('aria-selected', 'true');
             
             document.querySelectorAll('.panel').forEach(panel => {
                 panel.classList.remove('active');
+                panel.style.display = 'none';
             });
-            document.getElementById(`${type}Panel`).classList.add('active');
+            
+            const activePanel = document.getElementById(`${type}Panel`);
+            activePanel.classList.add('active');
+            activePanel.style.display = 'block';
             
             // Update map based on user type
             if (type === 'patient') {
@@ -1552,39 +2088,67 @@
             }, 100);
             
             // Auto-open sidebar on mobile
-            if (window.innerWidth <= 992 && !state.isSidebarOpen) {
+            if (state.isMobile && !state.isSidebarOpen) {
                 toggleSidebar();
             }
         }
 
+        // ==============================================
         // Initialize Leaflet map
-        function initializeMap() {
-            // Create map with default view (will be updated when location is available)
-            state.map = L.map('map').setView([24.7136, 46.6753], 10); // Default to Riyadh
+        // ==============================================
+        async function initializeMap() {
+            // Create map with default view
+            state.map = L.map('map', {
+                zoomControl: true,
+                zoomControl: false // We'll add custom control
+            }).setView([24.7136, 46.6753], 10); // Default to Riyadh
             
-            // Add OpenStreetMap tile layer
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 19
+            // Add custom zoom control
+            L.control.zoom({
+                position: 'bottomright'
             }).addTo(state.map);
             
-            // Fix rendering issues
-            window.addEventListener('resize', () => {
+            // Add OpenStreetMap tile layer with retina support
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19,
+                detectRetina: true
+            }).addTo(state.map);
+            
+            // Fix rendering issues on resize and orientation change
+            window.addEventListener('resize', debounce(() => {
                 if (state.map) state.map.invalidateSize();
+            }, 250));
+            
+            // Handle orientation change
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => {
+                    if (state.map) state.map.invalidateSize();
+                }, 300);
+            });
+            
+            // Add loading indicator to map
+            state.map.on('load', function() {
+                hideLoading();
             });
         }
 
+        // ==============================================
         // Get user location using Geolocation API
+        // ==============================================
         async function initializeLocation() {
             if (navigator.geolocation) {
                 try {
                     showLoading('جاري تحديد موقعك...');
+                    
                     const position = await new Promise((resolve, reject) => {
-                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        const options = {
                             enableHighAccuracy: true,
                             timeout: 15000,
-                            maximumAge: 0
-                        });
+                            maximumAge: 60000 // Cache for 1 minute
+                        };
+                        
+                        navigator.geolocation.getCurrentPosition(resolve, reject, options);
                     });
                     
                     state.userLocation = {
@@ -1596,16 +2160,7 @@
                     state.map.setView([state.userLocation.lat, state.userLocation.lng], 14);
                     
                     // Add user location marker
-                    state.userMarker = L.marker([state.userLocation.lat, state.userLocation.lng], {
-                        icon: L.divIcon({
-                            html: '<div style="background-color: var(--user-color); width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3);"></div>',
-                            className: 'user-marker',
-                            iconSize: [26, 26]
-                        })
-                    })
-                    .addTo(state.map)
-                    .bindPopup('موقعك الحالي')
-                    .openPopup();
+                    addUserLocationMarker();
                     
                     // Add radius circle
                     updateUserRadiusCircle();
@@ -1620,31 +2175,62 @@
                     
                 } catch (error) {
                     console.error('Geolocation error:', error);
-                    // Fallback to Riyadh location
-                    state.userLocation = { lat: 24.7136, lng: 46.6753 };
-                    state.map.setView([state.userLocation.lat, state.userLocation.lng], 13);
-                    
-                    document.getElementById('locationText').textContent = 
-                        'تعذر تحديد موقعك. استخدم الموقع الافتراضي (الرياض).';
-                    document.getElementById('locationInfo').style.borderRightColor = 'var(--warning-color)';
-                    
-                    hideLoading();
-                    showNotification('تعذر الوصول للموقع', 'يستخدم الموقع الافتراضي (الرياض). قم بتفعيل خدمات الموقع لدقة أفضل.', 'warning');
+                    handleGeolocationError(error);
                 }
             } else {
                 // Geolocation not supported
-                state.userLocation = { lat: 24.7136, lng: 46.6753 };
-                state.map.setView([state.userLocation.lat, state.userLocation.lng], 13);
-                
-                document.getElementById('locationText').textContent = 
-                    'المتصفح لا يدعم تحديد الموقع. يستخدم الموقع الافتراضي (الرياض).';
-                document.getElementById('locationInfo').style.borderRightColor = 'var(--warning-color)';
-                
-                showNotification('المتصفح لا يدعم الموقع', 'يستخدم الموقع الافتراضي (الرياض).', 'warning');
+                handleGeolocationError(new Error('Geolocation not supported'));
             }
         }
 
+        // ==============================================
+        // Add user location marker
+        // ==============================================
+        function addUserLocationMarker() {
+            // Remove existing user marker
+            if (state.userMarker) {
+                state.map.removeLayer(state.userMarker);
+            }
+            
+            state.userMarker = L.marker([state.userLocation.lat, state.userLocation.lng], {
+                icon: L.divIcon({
+                    html: '<div style="background-color: var(--user-color); width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3);"></div>',
+                    className: 'user-marker',
+                    iconSize: [26, 26]
+                }),
+                zIndexOffset: 1000
+            })
+            .addTo(state.map)
+            .bindPopup('موقعك الحالي')
+            .openPopup();
+        }
+
+        // ==============================================
+        // Handle geolocation error
+        // ==============================================
+        function handleGeolocationError(error) {
+            // Fallback to Riyadh location
+            state.userLocation = { lat: 24.7136, lng: 46.6753 };
+            state.map.setView([state.userLocation.lat, state.userLocation.lng], 13);
+            
+            let errorMessage = 'تعذر تحديد موقعك. استخدم الموقع الافتراضي (الرياض).';
+            
+            if (error.code === error.PERMISSION_DENIED) {
+                errorMessage = 'تم رفض صلاحية الموقع. يستخدم الموقع الافتراضي (الرياض).';
+            } else if (error.code === error.TIMEOUT) {
+                errorMessage = 'انتهت المهلة في تحديد الموقع. يستخدم الموقع الافتراضي (الرياض).';
+            }
+            
+            document.getElementById('locationText').textContent = errorMessage;
+            document.getElementById('locationInfo').style.borderRightColor = 'var(--warning-color)';
+            
+            hideLoading();
+            showNotification('تعذر الوصول للموقع', errorMessage, 'warning');
+        }
+
+        // ==============================================
         // Update the radius circle on the map
+        // ==============================================
         function updateUserRadiusCircle() {
             // Remove existing circle if any
             if (state.radiusCircle) {
@@ -1663,11 +2249,13 @@
             }
         }
 
+        // ==============================================
         // Load pharmacies from Firestore
+        // ==============================================
         async function loadPharmaciesFromFirestore() {
             try {
                 showLoading('جاري تحميل الصيدليات...');
-                const pharmaciesSnapshot = await db.collection('pharmacies').get();
+                const pharmaciesSnapshot = await db.collection('pharmacies').limit(50).get(); // Limit to 50 for performance
                 state.pharmacies = [];
                 
                 pharmaciesSnapshot.forEach(doc => {
@@ -1691,38 +2279,48 @@
             }
         }
 
+        // ==============================================
         // Setup Firestore real-time listeners
+        // ==============================================
         function setupFirestoreListeners() {
-            // Listen for new pharmacies
-            db.collection('pharmacies').onSnapshot((snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added') {
-                        // A new pharmacy was added
-                        const pharmacyData = change.doc.data();
-                        pharmacyData.id = change.doc.id;
-                        state.pharmacies.push(pharmacyData);
-                        showAllPharmacies();
-                        renderRecentPharmacies();
-                    } else if (change.type === 'modified') {
-                        // A pharmacy was updated
-                        const updatedPharmacy = change.doc.data();
-                        updatedPharmacy.id = change.doc.id;
-                        const index = state.pharmacies.findIndex(p => p.id === updatedPharmacy.id);
-                        if (index !== -1) {
-                            state.pharmacies[index] = updatedPharmacy;
+            // Listen for new pharmacies with error handling
+            try {
+                db.collection('pharmacies').onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added') {
+                            // A new pharmacy was added
+                            const pharmacyData = change.doc.data();
+                            pharmacyData.id = change.doc.id;
+                            state.pharmacies.push(pharmacyData);
+                            showAllPharmacies();
+                            renderRecentPharmacies();
+                        } else if (change.type === 'modified') {
+                            // A pharmacy was updated
+                            const updatedPharmacy = change.doc.data();
+                            updatedPharmacy.id = change.doc.id;
+                            const index = state.pharmacies.findIndex(p => p.id === updatedPharmacy.id);
+                            if (index !== -1) {
+                                state.pharmacies[index] = updatedPharmacy;
+                            }
+                        } else if (change.type === 'removed') {
+                            // A pharmacy was removed
+                            const removedId = change.doc.id;
+                            state.pharmacies = state.pharmacies.filter(p => p.id !== removedId);
+                            showAllPharmacies();
+                            renderRecentPharmacies();
                         }
-                    } else if (change.type === 'removed') {
-                        // A pharmacy was removed
-                        const removedId = change.doc.id;
-                        state.pharmacies = state.pharmacies.filter(p => p.id !== removedId);
-                        showAllPharmacies();
-                        renderRecentPharmacies();
-                    }
+                    });
+                }, (error) => {
+                    console.error('Firestore listener error:', error);
                 });
-            });
+            } catch (error) {
+                console.error('Error setting up Firestore listeners:', error);
+            }
         }
 
+        // ==============================================
         // Load mock pharmacy data (fallback)
+        // ==============================================
         function loadMockData() {
             state.pharmacies = [
                 {
@@ -1777,11 +2375,24 @@
             renderRecentPharmacies();
         }
 
+        // ==============================================
+        // Clear all markers from map
+        // ==============================================
+        function clearMarkers() {
+            state.markers.forEach(marker => {
+                if (marker && state.map.hasLayer(marker)) {
+                    state.map.removeLayer(marker);
+                }
+            });
+            state.markers = [];
+        }
+
+        // ==============================================
         // Show all pharmacies on the map
+        // ==============================================
         function showAllPharmacies() {
             // Clear existing markers
-            state.markers.forEach(marker => state.map.removeLayer(marker));
-            state.markers = [];
+            clearMarkers();
             
             // Add markers for each pharmacy
             state.pharmacies.forEach(pharmacy => {
@@ -1807,55 +2418,75 @@
                     [state.userLocation.lat, state.userLocation.lng],
                     ...state.pharmacies.map(p => [p.location.lat, p.location.lng])
                 ]);
-                state.map.fitBounds(bounds, { padding: [50, 50] });
+                
+                // Add padding for better view
+                state.map.fitBounds(bounds, { 
+                    padding: [50, 50],
+                    maxZoom: 15
+                });
             }
         }
 
+        // ==============================================
         // Search for medicine in pharmacies
+        // ==============================================
         function searchMedicine(medicineName) {
             state.selectedMedicine = medicineName;
             
-            // Calculate distances and filter by radius
-            const availablePharmacies = state.pharmacies.filter(pharmacy => {
-                // Check if pharmacy has the medicine
-                const hasMedicine = pharmacy.inventory.some(item => 
-                    item.name.toLowerCase().includes(medicineName.toLowerCase()) && item.stock !== 'out'
-                );
-                
-                if (!hasMedicine) return false;
-                
-                // Calculate distance
-                if (state.userLocation) {
-                    const distance = calculateDistance(
-                        state.userLocation.lat, state.userLocation.lng,
-                        pharmacy.location.lat, pharmacy.location.lng
+            // Show loading state
+            DOM.searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري البحث...';
+            DOM.searchBtn.disabled = true;
+            
+            setTimeout(() => {
+                // Calculate distances and filter by radius
+                const availablePharmacies = state.pharmacies.filter(pharmacy => {
+                    // Check if pharmacy has the medicine
+                    const hasMedicine = pharmacy.inventory && pharmacy.inventory.some(item => 
+                        item.name && item.name.toLowerCase().includes(medicineName.toLowerCase()) && item.stock !== 'out'
                     );
-                    pharmacy.distance = distance.toFixed(1);
-                    return distance <= state.searchRadius;
+                    
+                    if (!hasMedicine) return false;
+                    
+                    // Calculate distance
+                    if (state.userLocation) {
+                        const distance = calculateDistance(
+                            state.userLocation.lat, state.userLocation.lng,
+                            pharmacy.location.lat, pharmacy.location.lng
+                        );
+                        pharmacy.distance = distance.toFixed(1);
+                        return distance <= state.searchRadius;
+                    }
+                    
+                    return true;
+                });
+                
+                // Update map with filtered pharmacies
+                updateMapWithSearchResults(availablePharmacies, medicineName);
+                
+                // Display results in sidebar
+                displaySearchResults(availablePharmacies, medicineName);
+                
+                // Show notification
+                if (availablePharmacies.length > 0) {
+                    showNotification('تم العثور على الدواء!', 
+                        `${medicineName} متوفر في ${availablePharmacies.length} صيدلية ضمن ${state.searchRadius}كم.`, 
+                        'success');
+                } else {
+                    showNotification('لم يتم العثور على الدواء', 
+                        `${medicineName} غير متوفر في الصيدليات القريبة. جرب دواء آخر أو زد نطاق البحث.`, 
+                        'error');
                 }
                 
-                return true;
-            });
-            
-            // Update map with filtered pharmacies
-            updateMapWithSearchResults(availablePharmacies, medicineName);
-            
-            // Display results in sidebar
-            displaySearchResults(availablePharmacies, medicineName);
-            
-            // Show notification
-            if (availablePharmacies.length > 0) {
-                showNotification('تم العثور على الدواء!', 
-                    `${medicineName} متوفر في ${availablePharmacies.length} صيدلية ضمن ${state.searchRadius}كم.`, 
-                    'success');
-            } else {
-                showNotification('لم يتم العثور على الدواء', 
-                    `${medicineName} غير متوفر في الصيدليات القريبة. جرب دواء آخر أو زد نطاق البحث.`, 
-                    'error');
-            }
+                // Reset button state
+                DOM.searchBtn.innerHTML = '<i class="fas fa-search"></i> ابحث عن دواء';
+                DOM.searchBtn.disabled = false;
+                
+            }, 800); // Simulate network delay
         }
 
+        // ==============================================
         // Calculate distance between two coordinates using Haversine formula
+        // ==============================================
         function calculateDistance(lat1, lon1, lat2, lon2) {
             const R = 6371; // Earth's radius in km
             const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -1868,11 +2499,17 @@
             return R * c;
         }
 
+        // ==============================================
         // Update map with search results
+        // ==============================================
         function updateMapWithSearchResults(pharmacies, medicineName) {
             // Clear existing markers
-            state.markers.forEach(marker => state.map.removeLayer(marker));
-            state.markers = [];
+            clearMarkers();
+            
+            // Add user location marker
+            if (state.userLocation && state.userMarker) {
+                state.map.addLayer(state.userMarker);
+            }
             
             // Add markers for available pharmacies
             pharmacies.forEach(pharmacy => {
@@ -1882,7 +2519,8 @@
                 );
                 
                 let iconColor = 'var(--success-color)';
-                if (medicine.stock === 'low') iconColor = 'var(--warning-color)';
+                if (medicine && medicine.stock === 'low') iconColor = 'var(--warning-color)';
+                if (medicine && medicine.stock === 'out') iconColor = 'var(--danger-color)';
                 
                 const marker = L.marker([pharmacy.location.lat, pharmacy.location.lng], {
                     icon: L.divIcon({
@@ -1892,7 +2530,7 @@
                     })
                 })
                 .addTo(state.map)
-                .bindPopup(`<b>${pharmacy.name}</b><br>${medicineName}: ${medicine.stock} stock<br>${pharmacy.distance}km away`)
+                .bindPopup(`<b>${pharmacy.name}</b><br>${medicineName}: ${medicine ? medicine.stock : 'غير متوفر'}<br>${pharmacy.distance}km away`)
                 .on('click', function() {
                     showPharmacyDetails(pharmacy);
                 });
@@ -1908,19 +2546,24 @@
                 if (state.userLocation) {
                     bounds.extend([state.userLocation.lat, state.userLocation.lng]);
                 }
-                state.map.fitBounds(bounds, { padding: [50, 50] });
+                state.map.fitBounds(bounds, { 
+                    padding: [50, 50],
+                    maxZoom: 15
+                });
             }
         }
 
+        // ==============================================
         // Display search results in sidebar
+        // ==============================================
         function displaySearchResults(pharmacies, medicineName) {
-            const resultsContainer = document.getElementById('pharmacyResults');
-            const patientResults = document.getElementById('patientResults');
+            const resultsContainer = DOM.pharmacyResults;
+            const patientResults = DOM.patientResults;
             
             if (pharmacies.length === 0) {
                 resultsContainer.innerHTML = `
                     <div style="text-align: center; padding: 2rem; color: #666;">
-                        <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                        <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 1rem;" aria-hidden="true"></i>
                         <p>لم يتم العثور على صيدليات تحتوي على "${medicineName}" ضمن ${state.searchRadius}كم.</p>
                     </div>
                 `;
@@ -1935,16 +2578,16 @@
                 );
                 
                 html += `
-                    <div class="pharmacy-list-item" data-id="${pharmacy.id}">
+                    <div class="pharmacy-list-item" data-id="${pharmacy.id}" role="button" tabindex="0">
                         <h4 style="margin-bottom: 0.5rem;">${pharmacy.name}</h4>
                         <p style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">
-                            <i class="fas fa-map-marker-alt"></i> ${pharmacy.distance}كم • ${pharmacy.address}
+                            <i class="fas fa-map-marker-alt" aria-hidden="true"></i> ${pharmacy.distance}كم • ${pharmacy.address}
                         </p>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span class="stock-status ${medicine.stock === 'high' ? 'stock-in' : medicine.stock === 'medium' ? 'stock-low' : 'stock-out'}">
                                 ${medicine.stock === 'high' ? 'مخزون عالي' : medicine.stock === 'medium' ? 'مخزون متوسط' : 'مخزون منخفض'} • ${medicine.price}
                             </span>
-                            <button class="btn btn-primary" style="padding: 0.3rem 0.8rem; font-size: 0.9rem;" onclick="showPharmacyDetails('${pharmacy.id}')">
+                            <button class="btn btn-primary" style="padding: 0.3rem 0.8rem; font-size: 0.9rem;" onclick="window.showPharmacyDetails('${pharmacy.id}')" aria-label="عرض تفاصيل ${pharmacy.name}">
                                 التفاصيل
                             </button>
                         </div>
@@ -1964,12 +2607,25 @@
                         showPharmacyDetails(pharmacy);
                     }
                 });
+                
+                item.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        const pharmacyId = this.getAttribute('data-id');
+                        const pharmacy = state.pharmacies.find(p => p.id === pharmacyId);
+                        if (pharmacy) {
+                            showPharmacyDetails(pharmacy);
+                        }
+                    }
+                });
             });
         }
 
+        // ==============================================
         // Render a list of recently registered pharmacies
+        // ==============================================
         function renderRecentPharmacies(limit = 5) {
-            const box = document.getElementById('recentPharmaciesList');
+            const box = DOM.recentPharmaciesList;
             if (!box) return;
 
             const sorted = [...state.pharmacies]
@@ -1983,13 +2639,13 @@
             }
 
             box.innerHTML = sorted.map(p => `
-                <div class="pharmacy-list-item" data-id="${p.id}">
+                <div class="pharmacy-list-item" data-id="${p.id}" role="button" tabindex="0">
                     <h4 style="margin-bottom:0.5rem;">${p.name}</h4>
                     <p style="color:#666; font-size:0.9rem; margin-bottom:0.25rem;">
-                        <i class="fas fa-map-marker-alt"></i> ${p.address || ''}
+                        <i class="fas fa-map-marker-alt" aria-hidden="true"></i> ${p.address || ''}
                     </p>
                     <p style="color:#666; font-size:0.85rem;">
-                        <i class="fas fa-clock"></i> ${new Date(p.registeredAt).toLocaleDateString('ar-SA')}
+                        <i class="fas fa-clock" aria-hidden="true"></i> ${new Date(p.registeredAt).toLocaleDateString('ar-SA')}
                     </p>
                 </div>
             `).join('');
@@ -2000,10 +2656,21 @@
                     const pharmacy = state.pharmacies.find(x => x.id === id);
                     if (pharmacy) showPharmacyDetails(pharmacy);
                 });
+                
+                item.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        const id = item.getAttribute('data-id');
+                        const pharmacy = state.pharmacies.find(x => x.id === id);
+                        if (pharmacy) showPharmacyDetails(pharmacy);
+                    }
+                });
             });
         }
 
+        // ==============================================
         // Show pharmacy details modal
+        // ==============================================
         function showPharmacyDetails(pharmacy) {
             const pharmacyObj = typeof pharmacy === 'string' 
                 ? state.pharmacies.find(p => p.id === pharmacy) 
@@ -2036,7 +2703,7 @@
                                      item.stock === 'medium' ? 'مخزون متوسط' : 
                                      item.stock === 'low' ? 'مخزون منخفض' : 'نفذ من المخزون';
                     html += `
-                        <div style="display: flex; justify-content: space-between; padding: 0.7rem; border-bottom: 1px solid #eee; align-items: center;">
+                        <div style="display: flex; justify-content: space-between; padding: 0.7rem; border-bottom: 1px solid #eee; align-items: center;" role="listitem">
                             <span style="font-weight: 500;">${item.name}</span>
                             <span class="stock-status ${item.stock === 'high' ? 'stock-in' : item.stock === 'medium' ? 'stock-low' : 'stock-out'}">
                                 ${stockText} • ${item.price}
@@ -2054,25 +2721,40 @@
                 const url = `https://www.google.com/maps/dir/?api=1&destination=${pharmacyObj.location.lat},${pharmacyObj.location.lng}`;
                 window.open(url, '_blank');
                 showToast('جاري فتح خرائط Google...');
+                closePharmacyModal();
             };
             
             // Show modal
-            document.getElementById('pharmacyModal').style.display = 'flex';
+            DOM.modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Prevent background scroll
+            
+            // Set focus to modal for accessibility
+            setTimeout(() => {
+                document.getElementById('closePharmacyModal').focus();
+            }, 100);
             
             // Close sidebar on mobile when modal opens
-            if (window.innerWidth <= 992) {
-                document.getElementById('sidebar').classList.add('collapsed');
-                state.isSidebarOpen = false;
-                document.getElementById('mobileMenuBtn').innerHTML = '<i class="fas fa-bars"></i>';
+            if (state.isMobile && state.isSidebarOpen) {
+                toggleSidebar();
             }
         }
 
+        // ==============================================
         // Close pharmacy modal
+        // ==============================================
         function closePharmacyModal() {
-            document.getElementById('pharmacyModal').style.display = 'none';
+            DOM.modal.style.display = 'none';
+            document.body.style.overflow = ''; // Restore scroll
+            
+            // Return focus to the element that opened the modal
+            if (document.activeElement) {
+                document.activeElement.blur();
+            }
         }
 
+        // ==============================================
         // Firebase Authentication Handlers
+        // ==============================================
         async function handleFirebaseLogin() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
@@ -2097,12 +2779,16 @@
                     errorMessage = 'كلمة المرور غير صحيحة.';
                 } else if (error.code === 'auth/invalid-email') {
                     errorMessage = 'البريد الإلكتروني غير صالح.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = 'تم إجراء محاولات كثيرة. حاول مرة أخرى لاحقاً.';
                 }
                 showNotification('فشل تسجيل الدخول', errorMessage, 'error');
             }
         }
 
+        // ==============================================
         // Handle pharmacy registration with Firebase
+        // ==============================================
         async function handleFirebaseRegister() {
             const name = document.getElementById('pharmacyName').value;
             const email = document.getElementById('pharmacyEmail').value;
@@ -2118,6 +2804,13 @@
             
             if (password.length < 6) {
                 showNotification('خطأ في التسجيل', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.', 'error');
+                return;
+            }
+            
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showNotification('خطأ في التسجيل', 'البريد الإلكتروني غير صالح.', 'error');
                 return;
             }
             
@@ -2167,26 +2860,31 @@
                     errorMessage = 'كلمة المرور ضعيفة.';
                 } else if (error.code === 'auth/invalid-email') {
                     errorMessage = 'البريد الإلكتروني غير صالح.';
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    errorMessage = 'التسجيل بالإيميل غير مفعل حالياً.';
                 }
                 showNotification('فشل التسجيل', errorMessage, 'error');
             }
         }
 
+        // ==============================================
         // Handle Google login
+        // ==============================================
         async function handleGoogleLogin() {
             try {
-                // Note: For Firebase v9+, you need to use modular SDK
-                // This is simplified for the example
                 showNotification('تسجيل الدخول بـ Google', 'هذه الميزة تتطلب إعدادًا إضافيًا في Firebase.', 'warning');
-                // In a real app: 
-                // const provider = new firebase.auth.GoogleAuthProvider();
-                // await auth.signInWithPopup(provider);
+                // Note: For a complete implementation, you would need to:
+                // 1. Import the Google auth provider
+                // 2. Create a provider instance
+                // 3. Use signInWithPopup or signInWithRedirect
             } catch (error) {
                 showNotification('خطأ', 'تعذر تسجيل الدخول بحساب Google.', 'error');
             }
         }
 
+        // ==============================================
         // Handle logout
+        // ==============================================
         async function handleFirebaseLogout() {
             try {
                 showLoading('جاري تسجيل الخروج...');
@@ -2199,7 +2897,9 @@
             }
         }
 
+        // ==============================================
         // Update UI when user is logged in
+        // ==============================================
         function updateUIForLoggedInUser(user) {
             // Show user info in header
             document.getElementById('userInfo').style.display = 'flex';
@@ -2215,7 +2915,9 @@
             document.body.classList.add('logged-in');
         }
 
+        // ==============================================
         // Update UI when user is logged out
+        // ==============================================
         function updateUIForLoggedOutUser() {
             // Hide user info in header
             document.getElementById('userInfo').style.display = 'none';
@@ -2243,9 +2945,16 @@
             document.getElementById('pharmacyPassword').type = 'password';
             document.getElementById('toggleLoginPassword').querySelector('i').className = 'far fa-eye';
             document.getElementById('toggleRegisterPassword').querySelector('i').className = 'far fa-eye';
+            
+            // Switch to patient view
+            if (state.userType === 'pharmacy') {
+                switchUserType('patient');
+            }
         }
 
+        // ==============================================
         // Show inventory management section
+        // ==============================================
         function showInventorySection() {
             document.getElementById('inventorySection').classList.add('active');
             document.getElementById('loginForm').classList.remove('active');
@@ -2261,23 +2970,16 @@
             }
         }
 
+        // ==============================================
         // Highlight current pharmacy on the map
+        // ==============================================
         function highlightCurrentPharmacy() {
             // Clear existing markers
-            state.markers.forEach(marker => state.map.removeLayer(marker));
-            state.markers = [];
+            clearMarkers();
             
             // Add user location marker
             if (state.userLocation) {
-                state.userMarker = L.marker([state.userLocation.lat, state.userLocation.lng], {
-                    icon: L.divIcon({
-                        html: '<div style="background-color: var(--user-color); width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3);"></div>',
-                        className: 'user-marker',
-                        iconSize: [26, 26]
-                    })
-                })
-                .addTo(state.map)
-                .bindPopup('موقعك الحالي');
+                addUserLocationMarker();
             }
             
             // Add current pharmacy marker
@@ -2296,15 +2998,22 @@
                 state.markers.push(marker);
                 
                 // Fit map to show user and pharmacy
-                const bounds = L.latLngBounds([
-                    [state.userLocation.lat, state.userLocation.lng],
-                    [state.currentPharmacy.location.lat, state.currentPharmacy.location.lng]
-                ]);
-                state.map.fitBounds(bounds, { padding: [100, 100] });
+                if (state.userLocation) {
+                    const bounds = L.latLngBounds([
+                        [state.userLocation.lat, state.userLocation.lng],
+                        [state.currentPharmacy.location.lat, state.currentPharmacy.location.lng]
+                    ]);
+                    state.map.fitBounds(bounds, { 
+                        padding: [100, 100],
+                        maxZoom: 15
+                    });
+                }
             }
         }
 
+        // ==============================================
         // Load pharmacy inventory from Firestore
+        // ==============================================
         async function loadPharmacyInventoryFromFirestore() {
             if (!state.currentPharmacy) return;
             
@@ -2344,7 +3053,9 @@
             }
         }
 
+        // ==============================================
         // Render inventory list
+        // ==============================================
         function renderInventoryList(inventory) {
             const inventoryList = document.getElementById('inventoryList');
             
@@ -2360,13 +3071,13 @@
                             <div style="font-size: 0.9rem; color: #666;">${item.price}</div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 1rem;">
-                            <select class="stock-select" data-index="${index}" style="padding: 0.5rem; border-radius: 6px; border: 1px solid #ddd; font-family: var(--font-ar);">
+                            <select class="stock-select" data-index="${index}" style="padding: 0.5rem; border-radius: 6px; border: 1px solid #ddd; font-family: var(--font-ar); min-height: 44px;">
                                 <option value="high" ${item.stock === 'high' ? 'selected' : ''}>مخزون عالي</option>
                                 <option value="medium" ${item.stock === 'medium' ? 'selected' : ''}>مخزون متوسط</option>
                                 <option value="low" ${item.stock === 'low' ? 'selected' : ''}>مخزون منخفض</option>
                                 <option value="out" ${item.stock === 'out' ? 'selected' : ''}>نفذ من المخزون</option>
                             </select>
-                            <button class="remove-btn" data-index="${index}">
+                            <button class="remove-btn" data-index="${index}" aria-label="حذف ${item.name}">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -2392,13 +3103,16 @@
             });
         }
 
+        // ==============================================
         // Add medicine to inventory
+        // ==============================================
         async function addMedicineToInventory() {
             const input = document.getElementById('addMedicineInput');
             const medicineName = input.value.trim();
             
             if (!medicineName) {
                 showNotification('خطأ', 'الرجاء إدخال اسم الدواء.', 'error');
+                input.focus();
                 return;
             }
             
@@ -2443,7 +3157,9 @@
             }
         }
 
+        // ==============================================
         // Update stock status
+        // ==============================================
         async function updateStockStatus(index, status) {
             if (!state.currentPharmacy || !state.currentPharmacy.inventory) return;
             
@@ -2456,7 +3172,9 @@
             }
         }
 
+        // ==============================================
         // Remove medicine from inventory
+        // ==============================================
         async function removeMedicine(index) {
             if (!state.currentPharmacy || !state.currentPharmacy.inventory) return;
             
@@ -2477,7 +3195,9 @@
             }
         }
 
+        // ==============================================
         // Remove all out of stock items
+        // ==============================================
         async function removeOutOfStockItems() {
             if (!state.currentPharmacy || !state.currentPharmacy.inventory) return;
             
@@ -2499,12 +3219,19 @@
             }
         }
 
+        // ==============================================
         // Show notification
+        // ==============================================
         function showNotification(title, message, type = '') {
-            const notification = document.getElementById('notification');
+            const notification = DOM.notification;
             const notificationTitle = document.getElementById('notificationTitle');
             const notificationMessage = document.getElementById('notificationMessage');
             const notificationIcon = document.getElementById('notificationIcon');
+            
+            // Clear any existing timeout
+            if (state.notificationTimeout) {
+                clearTimeout(state.notificationTimeout);
+            }
             
             // Set notification content
             notificationTitle.textContent = title;
@@ -2533,46 +3260,67 @@
             
             // Show notification
             notification.classList.add('show');
+            notification.setAttribute('aria-live', 'assertive');
             
             // Auto-hide after 5 seconds
-            setTimeout(() => {
+            state.notificationTimeout = setTimeout(() => {
                 hideNotification();
             }, 5000);
         }
 
+        // ==============================================
         // Hide notification
+        // ==============================================
         function hideNotification() {
-            document.getElementById('notification').classList.remove('show');
+            DOM.notification.classList.remove('show');
+            DOM.notification.setAttribute('aria-live', 'off');
         }
 
+        // ==============================================
         // Show toast notification
+        // ==============================================
         function showToast(message, duration = 3000) {
-            const toast = document.getElementById('toast');
+            const toast = DOM.toast;
             const toastMessage = document.getElementById('toastMessage');
+            
+            // Clear any existing timeout
+            if (state.toastTimeout) {
+                clearTimeout(state.toastTimeout);
+            }
             
             toastMessage.textContent = message;
             toast.classList.add('show');
+            toast.setAttribute('aria-live', 'assertive');
             
-            setTimeout(() => {
+            state.toastTimeout = setTimeout(() => {
                 toast.classList.remove('show');
+                toast.setAttribute('aria-live', 'off');
             }, duration);
         }
 
+        // ==============================================
         // Show loading overlay
+        // ==============================================
         function showLoading(message = 'جاري التحميل...') {
-            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loadingOverlay = DOM.loadingOverlay;
             const loadingText = document.getElementById('loadingText');
             
             loadingText.textContent = message;
             loadingOverlay.style.display = 'flex';
+            loadingOverlay.setAttribute('aria-busy', 'true');
         }
 
+        // ==============================================
         // Hide loading overlay
+        // ==============================================
         function hideLoading() {
-            document.getElementById('loadingOverlay').style.display = 'none';
+            DOM.loadingOverlay.style.display = 'none';
+            DOM.loadingOverlay.setAttribute('aria-busy', 'false');
         }
 
+        // ==============================================
         // Setup language toggle
+        // ==============================================
         function setupLanguageToggle() {
             const btn = document.getElementById('langToggleBtn');
             if (!btn) return;
@@ -2580,23 +3328,35 @@
             btn.addEventListener('click', () => {
                 const current = document.documentElement.lang || 'ar';
                 const next = current === 'ar' ? 'en' : 'ar';
-                document.documentElement.lang = next;
-                document.documentElement.dir = next === 'ar' ? 'rtl' : 'ltr';
-                
-                btn.textContent = next === 'ar' ? 'English' : 'العربية';
-                
-                // Update UI text based on language
-                updateUILanguage(next);
-                
-                // Store preference
-                localStorage.setItem('preferredLanguage', next);
-                state.currentLanguage = next;
+                toggleLanguage(next);
             });
         }
 
+        // ==============================================
+        // Toggle language
+        // ==============================================
+        function toggleLanguage(lang) {
+            document.documentElement.lang = lang;
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+            
+            const btn = document.getElementById('langToggleBtn');
+            btn.textContent = lang === 'ar' ? 'English' : 'العربية';
+            
+            // Update UI text based on language
+            updateUILanguage(lang);
+            
+            // Store preference
+            localStorage.setItem('preferredLanguage', lang);
+            state.currentLanguage = lang;
+            
+            // Show toast notification
+            showToast(lang === 'ar' ? 'تم التبديل إلى العربية' : 'Switched to English');
+        }
+
+        // ==============================================
         // Update UI language
+        // ==============================================
         function updateUILanguage(lang) {
-            // This is a simplified version - you would implement full i18n here
             const translations = {
                 ar: {
                     slogan: "دواؤك أقرب مما تتخيل...",
@@ -2653,22 +3413,44 @@
             });
         }
 
+        // ==============================================
         // Initialize language on load
+        // ==============================================
         const savedLanguage = localStorage.getItem('preferredLanguage') || 'ar';
-        document.documentElement.lang = savedLanguage;
-        document.documentElement.dir = savedLanguage === 'ar' ? 'rtl' : 'ltr';
-        state.currentLanguage = savedLanguage;
-        
-        const langBtn = document.getElementById('langToggleBtn');
-        if (langBtn) {
-            langBtn.textContent = savedLanguage === 'ar' ? 'English' : 'العربية';
-        }
-        
-        updateUILanguage(savedLanguage);
+        toggleLanguage(savedLanguage);
 
-        // Expose functions to global scope for inline onclick handlers
+        // ==============================================
+        // Utility Functions
+        // ==============================================
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // ==============================================
+        // Expose functions to global scope
+        // ==============================================
         window.showPharmacyDetails = showPharmacyDetails;
         window.closePharmacyModal = closePharmacyModal;
+        window.toggleLanguage = toggleLanguage;
+        
+        // ==============================================
+        // Performance optimization for mobile
+        // ==============================================
+        if ('connection' in navigator) {
+            const connection = navigator.connection;
+            if (connection.saveData) {
+                // Reduce animations for save data mode
+                document.documentElement.style.setProperty('--transition', 'all 0.1s ease');
+            }
+        }
     </script>
 </body>
 </html>
