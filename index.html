@@ -1106,7 +1106,7 @@
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             max-width: 350px;
             display: flex;
-            align-items: flex-start;
+                align-items: flex-start;
             gap: 12px;
             pointer-events: all;
             margin-left: var(--safe-area-left);
@@ -1577,7 +1577,8 @@
             isSidebarOpen: false,
             currentLanguage: 'ar',
             isMobile: window.innerWidth <= 992,
-            isScrolled: false
+            isScrolled: false,
+            currentPharmacyId: null // إضافة معرف الصيدلية الحالية
         };
 
         // Common medicines for search suggestions
@@ -1757,6 +1758,7 @@
                     // User is signed out
                     state.currentUser = null;
                     state.currentPharmacy = null;
+                    state.currentPharmacyId = null;
                     updateUIForLoggedOutUser();
                 }
             });
@@ -1770,11 +1772,17 @@
             
             // Check if user has a pharmacy account
             try {
-                const pharmacyDoc = await db.collection('pharmacies').where('ownerId', '==', user.uid).limit(1).get();
-                if (!pharmacyDoc.empty) {
-                    const pharmacyData = pharmacyDoc.docs[0].data();
-                    pharmacyData.id = pharmacyDoc.docs[0].id;
+                const pharmacyQuery = await db.collection('pharmacies')
+                    .where('ownerId', '==', user.uid)
+                    .limit(1)
+                    .get();
+                
+                if (!pharmacyQuery.empty) {
+                    const pharmacyDoc = pharmacyQuery.docs[0];
+                    const pharmacyData = pharmacyDoc.data();
+                    pharmacyData.id = pharmacyDoc.id;
                     state.currentPharmacy = pharmacyData;
+                    state.currentPharmacyId = pharmacyDoc.id;
                     showInventorySection();
                     loadPharmacyInventoryFromFirestore();
                     showToast(`مرحباً بعودتك إلى ${pharmacyData.name}!`);
@@ -1848,6 +1856,8 @@
                 if (medicine) {
                     searchMedicine(medicine);
                     hideSearchSuggestions();
+                } else {
+                    showNotification('خطأ', 'الرجاء إدخال اسم الدواء', 'error');
                 }
             });
 
@@ -2301,6 +2311,11 @@
                             const index = state.pharmacies.findIndex(p => p.id === updatedPharmacy.id);
                             if (index !== -1) {
                                 state.pharmacies[index] = updatedPharmacy;
+                                // تحديث واجهة المستخدم إذا كانت الصيدلية هي الحالية
+                                if (state.currentPharmacyId === updatedPharmacy.id) {
+                                    state.currentPharmacy = updatedPharmacy;
+                                    renderInventoryList(updatedPharmacy.inventory || []);
+                                }
                             }
                         } else if (change.type === 'removed') {
                             // A pharmacy was removed
@@ -2430,25 +2445,39 @@
         // ==============================================
         // Search for medicine in pharmacies
         // ==============================================
-        function searchMedicine(medicineName) {
+        async function searchMedicine(medicineName) {
             state.selectedMedicine = medicineName;
             
             // Show loading state
             DOM.searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري البحث...';
             DOM.searchBtn.disabled = true;
             
-            setTimeout(() => {
+            try {
+                // تحديث قائمة الصيدليات أولاً
+                await loadPharmaciesFromFirestore();
+                
                 // Calculate distances and filter by radius
                 const availablePharmacies = state.pharmacies.filter(pharmacy => {
-                    // Check if pharmacy has the medicine
-                    const hasMedicine = pharmacy.inventory && pharmacy.inventory.some(item => 
-                        item.name && item.name.toLowerCase().includes(medicineName.toLowerCase()) && item.stock !== 'out'
-                    );
+                    // Check if pharmacy has inventory
+                    if (!pharmacy.inventory || !Array.isArray(pharmacy.inventory)) {
+                        return false;
+                    }
+                    
+                    // Search for medicine (case-insensitive, partial match)
+                    const hasMedicine = pharmacy.inventory.some(item => {
+                        if (!item || !item.name) return false;
+                        
+                        const searchTerm = medicineName.toLowerCase().trim();
+                        const itemName = item.name.toLowerCase().trim();
+                        
+                        return itemName.includes(searchTerm) || 
+                               searchTerm.includes(itemName);
+                    });
                     
                     if (!hasMedicine) return false;
                     
-                    // Calculate distance
-                    if (state.userLocation) {
+                    // Calculate distance if user location is available
+                    if (state.userLocation && pharmacy.location) {
                         const distance = calculateDistance(
                             state.userLocation.lat, state.userLocation.lng,
                             pharmacy.location.lat, pharmacy.location.lng
@@ -2457,7 +2486,14 @@
                         return distance <= state.searchRadius;
                     }
                     
-                    return true;
+                    return true; // If no user location, show all pharmacies with medicine
+                });
+                
+                // Sort by distance
+                availablePharmacies.sort((a, b) => {
+                    const distA = parseFloat(a.distance) || Infinity;
+                    const distB = parseFloat(b.distance) || Infinity;
+                    return distA - distB;
                 });
                 
                 // Update map with filtered pharmacies
@@ -2469,19 +2505,22 @@
                 // Show notification
                 if (availablePharmacies.length > 0) {
                     showNotification('تم العثور على الدواء!', 
-                        `${medicineName} متوفر في ${availablePharmacies.length} صيدلية ضمن ${state.searchRadius}كم.`, 
+                        `"${medicineName}" متوفر في ${availablePharmacies.length} صيدلية ضمن ${state.searchRadius}كم.`, 
                         'success');
                 } else {
                     showNotification('لم يتم العثور على الدواء', 
-                        `${medicineName} غير متوفر في الصيدليات القريبة. جرب دواء آخر أو زد نطاق البحث.`, 
+                        `"${medicineName}" غير متوفر في الصيدليات القريبة. جرب دواء آخر أو زد نطاق البحث.`, 
                         'error');
                 }
                 
+            } catch (error) {
+                console.error('Error searching medicine:', error);
+                showNotification('خطأ', 'حدث خطأ أثناء البحث عن الدواء', 'error');
+            } finally {
                 // Reset button state
                 DOM.searchBtn.innerHTML = '<i class="fas fa-search"></i> ابحث عن دواء';
                 DOM.searchBtn.disabled = false;
-                
-            }, 800); // Simulate network delay
+            }
         }
 
         // ==============================================
@@ -2515,7 +2554,7 @@
             pharmacies.forEach(pharmacy => {
                 // Find the medicine in inventory
                 const medicine = pharmacy.inventory.find(item => 
-                    item.name.toLowerCase().includes(medicineName.toLowerCase())
+                    item && item.name && item.name.toLowerCase().includes(medicineName.toLowerCase())
                 );
                 
                 let iconColor = 'var(--success-color)';
@@ -2574,8 +2613,14 @@
             let html = '';
             pharmacies.forEach(pharmacy => {
                 const medicine = pharmacy.inventory.find(item => 
-                    item.name.toLowerCase().includes(medicineName.toLowerCase())
+                    item && item.name && item.name.toLowerCase().includes(medicineName.toLowerCase())
                 );
+                
+                if (!medicine) return;
+                
+                const stockText = medicine.stock === 'high' ? 'مخزون عالي' : 
+                                medicine.stock === 'medium' ? 'مخزون متوسط' : 
+                                medicine.stock === 'low' ? 'مخزون منخفض' : 'نفذ من المخزون';
                 
                 html += `
                     <div class="pharmacy-list-item" data-id="${pharmacy.id}" role="button" tabindex="0">
@@ -2585,7 +2630,7 @@
                         </p>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span class="stock-status ${medicine.stock === 'high' ? 'stock-in' : medicine.stock === 'medium' ? 'stock-low' : 'stock-out'}">
-                                ${medicine.stock === 'high' ? 'مخزون عالي' : medicine.stock === 'medium' ? 'مخزون متوسط' : 'مخزون منخفض'} • ${medicine.price}
+                                ${stockText} • ${medicine.price || 'غير محدد'}
                             </span>
                             <button class="btn btn-primary" style="padding: 0.3rem 0.8rem; font-size: 0.9rem;" onclick="window.showPharmacyDetails('${pharmacy.id}')" aria-label="عرض تفاصيل ${pharmacy.name}">
                                 التفاصيل
@@ -2679,7 +2724,7 @@
             if (!pharmacyObj) return;
             
             // Calculate distance if not already calculated
-            if (!pharmacyObj.distance && state.userLocation) {
+            if (!pharmacyObj.distance && state.userLocation && pharmacyObj.location) {
                 const distance = calculateDistance(
                     state.userLocation.lat, state.userLocation.lng,
                     pharmacyObj.location.lat, pharmacyObj.location.lng
@@ -2699,6 +2744,8 @@
             if (pharmacyObj.inventory && pharmacyObj.inventory.length > 0) {
                 let html = '';
                 pharmacyObj.inventory.forEach(item => {
+                    if (!item || !item.name) return;
+                    
                     const stockText = item.stock === 'high' ? 'مخزون عالي' : 
                                      item.stock === 'medium' ? 'مخزون متوسط' : 
                                      item.stock === 'low' ? 'مخزون منخفض' : 'نفذ من المخزون';
@@ -2706,7 +2753,7 @@
                         <div style="display: flex; justify-content: space-between; padding: 0.7rem; border-bottom: 1px solid #eee; align-items: center;" role="listitem">
                             <span style="font-weight: 500;">${item.name}</span>
                             <span class="stock-status ${item.stock === 'high' ? 'stock-in' : item.stock === 'medium' ? 'stock-low' : 'stock-out'}">
-                                ${stockText} • ${item.price}
+                                ${stockText} • ${item.price || 'غير محدد'}
                             </span>
                         </div>
                     `;
@@ -2718,10 +2765,14 @@
             
             // Set up directions button
             document.getElementById('getDirectionsBtn').onclick = function() {
-                const url = `https://www.google.com/maps/dir/?api=1&destination=${pharmacyObj.location.lat},${pharmacyObj.location.lng}`;
-                window.open(url, '_blank');
-                showToast('جاري فتح خرائط Google...');
-                closePharmacyModal();
+                if (pharmacyObj.location) {
+                    const url = `https://www.google.com/maps/dir/?api=1&destination=${pharmacyObj.location.lat},${pharmacyObj.location.lng}`;
+                    window.open(url, '_blank');
+                    showToast('جاري فتح خرائط Google...');
+                    closePharmacyModal();
+                } else {
+                    showNotification('خطأ', 'عنوان الصيدلية غير متوفر', 'error');
+                }
             };
             
             // Show modal
@@ -2838,7 +2889,8 @@
                 };
                 
                 // Save pharmacy to Firestore
-                await db.collection('pharmacies').add(pharmacyData);
+                const pharmacyRef = await db.collection('pharmacies').add(pharmacyData);
+                pharmacyData.id = pharmacyRef.id;
                 
                 // Update user profile
                 await user.updateProfile({
@@ -2983,7 +3035,7 @@
             }
             
             // Add current pharmacy marker
-            if (state.currentPharmacy) {
+            if (state.currentPharmacy && state.currentPharmacy.location) {
                 const marker = L.marker([state.currentPharmacy.location.lat, state.currentPharmacy.location.lng], {
                     icon: L.divIcon({
                         html: '<div style="background-color: var(--pharmacy-color); width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3);"></div>',
@@ -3015,7 +3067,7 @@
         // Load pharmacy inventory from Firestore
         // ==============================================
         async function loadPharmacyInventoryFromFirestore() {
-            if (!state.currentPharmacy) return;
+            if (!state.currentPharmacyId) return;
             
             const inventoryList = document.getElementById('inventoryList');
             inventoryList.innerHTML = `
@@ -3026,21 +3078,32 @@
             `;
             
             try {
-                // In a real app, you would fetch inventory from Firestore
-                // For now, we'll use the inventory from state.currentPharmacy
-                const inventory = state.currentPharmacy.inventory || [];
+                const pharmacyDoc = await db.collection('pharmacies').doc(state.currentPharmacyId).get();
                 
-                if (inventory.length === 0) {
+                if (pharmacyDoc.exists) {
+                    const pharmacyData = pharmacyDoc.data();
+                    const inventory = pharmacyData.inventory || [];
+                    
+                    if (inventory.length === 0) {
+                        inventoryList.innerHTML = `
+                            <div style="text-align: center; padding: 2rem; color: #666;">
+                                <i class="fas fa-box-open" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                                <p>لا توجد أدوية في المخزون. أضف أدوية باستخدام النموذج أعلاه.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    renderInventoryList(inventory);
+                    
+                } else {
                     inventoryList.innerHTML = `
                         <div style="text-align: center; padding: 2rem; color: #666;">
-                            <i class="fas fa-box-open" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                            <p>لا توجد أدوية في المخزون. أضف أدوية باستخدام النموذج أعلاه.</p>
+                            <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem; color: var(--danger-color);"></i>
+                            <p>لم يتم العثور على بيانات الصيدلية.</p>
                         </div>
                     `;
-                    return;
                 }
-                
-                renderInventoryList(inventory);
                 
             } catch (error) {
                 console.error('Error loading inventory:', error);
@@ -3061,6 +3124,8 @@
             
             let html = '';
             inventory.forEach((item, index) => {
+                if (!item || !item.name) return;
+                
                 const stockText = item.stock === 'high' ? 'مخزون عالي' : 
                                  item.stock === 'medium' ? 'مخزون متوسط' : 
                                  item.stock === 'low' ? 'مخزون منخفض' : 'نفذ من المخزون';
@@ -3068,7 +3133,7 @@
                     <div class="inventory-item" data-index="${index}">
                         <div>
                             <strong>${item.name}</strong>
-                            <div style="font-size: 0.9rem; color: #666;">${item.price}</div>
+                            <div style="font-size: 0.9rem; color: #666;">${item.price || 'غير محدد'}</div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 1rem;">
                             <select class="stock-select" data-index="${index}" style="padding: 0.5rem; border-radius: 6px; border: 1px solid #ddd; font-family: var(--font-ar); min-height: 44px;">
@@ -3116,35 +3181,73 @@
                 return;
             }
             
-            if (!state.currentPharmacy || !state.currentUser) {
+            if (!state.currentPharmacyId) {
                 showNotification('خطأ', 'لم يتم العثور على حساب الصيدلية.', 'error');
                 return;
             }
             
-            // Create new medicine item
-            const newMedicine = {
-                name: medicineName,
-                stock: 'high',
-                price: (Math.random() * 50 + 5).toFixed(2) + ' ر.س',
-                addedAt: new Date().toISOString()
-            };
-            
             try {
-                // In a real app, you would update Firestore here
-                // For now, update local state
-                if (!state.currentPharmacy.inventory) {
-                    state.currentPharmacy.inventory = [];
+                showLoading('جاري إضافة الدواء...');
+                
+                const pharmacyRef = db.collection('pharmacies').doc(state.currentPharmacyId);
+                const pharmacyDoc = await pharmacyRef.get();
+                
+                if (!pharmacyDoc.exists) {
+                    throw new Error('لم يتم العثور على بيانات الصيدلية');
                 }
                 
-                state.currentPharmacy.inventory.push(newMedicine);
+                const pharmacyData = pharmacyDoc.data();
+                const currentInventory = pharmacyData.inventory || [];
                 
-                // Update UI
-                renderInventoryList(state.currentPharmacy.inventory);
+                // التحقق مما إذا كان الدواء موجوداً بالفعل
+                const existingMedicine = currentInventory.find(item => 
+                    item && item.name && item.name.toLowerCase() === medicineName.toLowerCase()
+                );
                 
-                // Clear input
+                if (existingMedicine) {
+                    showNotification('معلومات', 'هذا الدواء موجود بالفعل في المخزون.', 'warning');
+                    input.value = '';
+                    hideLoading();
+                    return;
+                }
+                
+                // إنشاء عنصر الدواء الجديد
+                const newMedicine = {
+                    name: medicineName,
+                    stock: 'high',
+                    price: (Math.random() * 50 + 5).toFixed(2) + ' ر.س',
+                    addedAt: new Date().toISOString(),
+                    lastUpdated: new Date().toISOString()
+                };
+                
+                // إضافة الدواء إلى المخزون
+                currentInventory.push(newMedicine);
+                
+                // تحديث Firestore
+                await pharmacyRef.update({
+                    inventory: currentInventory,
+                    updatedAt: new Date().toISOString()
+                });
+                
+                // تحديث الـ state المحلي
+                if (state.currentPharmacy) {
+                    state.currentPharmacy.inventory = currentInventory;
+                }
+                
+                // تحديث قائمة الصيدليات العامة
+                const pharmacyIndex = state.pharmacies.findIndex(p => p.id === state.currentPharmacyId);
+                if (pharmacyIndex !== -1) {
+                    state.pharmacies[pharmacyIndex].inventory = currentInventory;
+                }
+                
+                // تحديث واجهة المستخدم
+                renderInventoryList(currentInventory);
+                
+                // مسح حقل الإدخال
                 input.value = '';
                 
-                showNotification('تمت الإضافة', `تم إضافة ${medicineName} إلى المخزون.`, 'success');
+                hideLoading();
+                showNotification('تمت الإضافة', `تم إضافة "${medicineName}" إلى المخزون.`, 'success');
                 
                 // Auto-hide notification after 3 seconds
                 setTimeout(() => {
@@ -3152,8 +3255,9 @@
                 }, 3000);
                 
             } catch (error) {
+                hideLoading();
                 console.error('Error adding medicine:', error);
-                showNotification('خطأ', 'تعذر إضافة الدواء إلى المخزون.', 'error');
+                showNotification('خطأ', `تعذر إضافة الدواء: ${error.message}`, 'error');
             }
         }
 
@@ -3161,14 +3265,43 @@
         // Update stock status
         // ==============================================
         async function updateStockStatus(index, status) {
-            if (!state.currentPharmacy || !state.currentPharmacy.inventory) return;
+            if (!state.currentPharmacyId) return;
             
             const medicineIndex = parseInt(index);
-            if (medicineIndex >= 0 && medicineIndex < state.currentPharmacy.inventory.length) {
-                state.currentPharmacy.inventory[medicineIndex].stock = status;
-                showToast('تم تحديث حالة المخزون.');
+            const pharmacyRef = db.collection('pharmacies').doc(state.currentPharmacyId);
+            
+            try {
+                const pharmacyDoc = await pharmacyRef.get();
+                if (!pharmacyDoc.exists) return;
                 
-                // In a real app, you would update Firestore here
+                const pharmacyData = pharmacyDoc.data();
+                const inventory = pharmacyData.inventory || [];
+                
+                if (medicineIndex >= 0 && medicineIndex < inventory.length) {
+                    inventory[medicineIndex].stock = status;
+                    inventory[medicineIndex].lastUpdated = new Date().toISOString();
+                    
+                    await pharmacyRef.update({
+                        inventory: inventory,
+                        updatedAt: new Date().toISOString()
+                    });
+                    
+                    // تحديث الـ state المحلي
+                    if (state.currentPharmacy) {
+                        state.currentPharmacy.inventory = inventory;
+                    }
+                    
+                    // تحديث قائمة الصيدليات العامة
+                    const pharmacyIndex = state.pharmacies.findIndex(p => p.id === state.currentPharmacyId);
+                    if (pharmacyIndex !== -1) {
+                        state.pharmacies[pharmacyIndex].inventory = inventory;
+                    }
+                    
+                    showToast('تم تحديث حالة المخزون.');
+                }
+            } catch (error) {
+                console.error('Error updating stock status:', error);
+                showNotification('خطأ', 'تعذر تحديث حالة المخزون', 'error');
             }
         }
 
@@ -3176,22 +3309,47 @@
         // Remove medicine from inventory
         // ==============================================
         async function removeMedicine(index) {
-            if (!state.currentPharmacy || !state.currentPharmacy.inventory) return;
+            if (!state.currentPharmacyId) return;
             
             const medicineIndex = parseInt(index);
-            if (medicineIndex >= 0 && medicineIndex < state.currentPharmacy.inventory.length) {
-                const medicineName = state.currentPharmacy.inventory[medicineIndex].name;
+            const pharmacyRef = db.collection('pharmacies').doc(state.currentPharmacyId);
+            
+            try {
+                const pharmacyDoc = await pharmacyRef.get();
+                if (!pharmacyDoc.exists) return;
                 
-                if (confirm(`هل أنت متأكد من حذف ${medicineName} من المخزون؟`)) {
-                    state.currentPharmacy.inventory.splice(medicineIndex, 1);
-                    renderInventoryList(state.currentPharmacy.inventory);
-                    showNotification('تم الحذف', `تم حذف ${medicineName} من المخزون.`, 'success');
+                const pharmacyData = pharmacyDoc.data();
+                const inventory = pharmacyData.inventory || [];
+                
+                if (medicineIndex >= 0 && medicineIndex < inventory.length) {
+                    const medicineName = inventory[medicineIndex].name;
                     
-                    // Auto-hide notification after 3 seconds
-                    setTimeout(() => {
-                        hideNotification();
-                    }, 3000);
+                    if (confirm(`هل أنت متأكد من حذف "${medicineName}" من المخزون؟`)) {
+                        inventory.splice(medicineIndex, 1);
+                        
+                        await pharmacyRef.update({
+                            inventory: inventory,
+                            updatedAt: new Date().toISOString()
+                        });
+                        
+                        // تحديث الـ state المحلي
+                        if (state.currentPharmacy) {
+                            state.currentPharmacy.inventory = inventory;
+                        }
+                        
+                        // تحديث قائمة الصيدليات العامة
+                        const pharmacyIndex = state.pharmacies.findIndex(p => p.id === state.currentPharmacyId);
+                        if (pharmacyIndex !== -1) {
+                            state.pharmacies[pharmacyIndex].inventory = inventory;
+                        }
+                        
+                        renderInventoryList(inventory);
+                        showNotification('تم الحذف', `تم حذف "${medicineName}" من المخزون.`, 'success');
+                    }
                 }
+            } catch (error) {
+                console.error('Error removing medicine:', error);
+                showNotification('خطأ', 'تعذر حذف الدواء', 'error');
             }
         }
 
@@ -3199,23 +3357,51 @@
         // Remove all out of stock items
         // ==============================================
         async function removeOutOfStockItems() {
-            if (!state.currentPharmacy || !state.currentPharmacy.inventory) return;
+            if (!state.currentPharmacyId) return;
             
-            const outOfStockItems = state.currentPharmacy.inventory.filter(item => item.stock === 'out');
+            const pharmacyRef = db.collection('pharmacies').doc(state.currentPharmacyId);
             
-            if (outOfStockItems.length === 0) {
-                showNotification('معلومات', 'لا توجد أدوية منتهية من المخزون.', 'warning');
-                return;
-            }
-            
-            if (confirm(`هل أنت متأكد من حذف جميع الأدوية المنتهية (${outOfStockItems.length} دواء)؟`)) {
-                const initialLength = state.currentPharmacy.inventory.length;
-                state.currentPharmacy.inventory = state.currentPharmacy.inventory.filter(item => item.stock !== 'out');
-                const removedCount = initialLength - state.currentPharmacy.inventory.length;
+            try {
+                const pharmacyDoc = await pharmacyRef.get();
+                if (!pharmacyDoc.exists) return;
                 
-                renderInventoryList(state.currentPharmacy.inventory);
-                showNotification('تم التنظيف', 
-                    `تم حذف ${removedCount} دواء منتهي من المخزون.`, 'success');
+                const pharmacyData = pharmacyDoc.data();
+                const inventory = pharmacyData.inventory || [];
+                
+                const outOfStockItems = inventory.filter(item => item.stock === 'out');
+                
+                if (outOfStockItems.length === 0) {
+                    showNotification('معلومات', 'لا توجد أدوية منتهية من المخزون.', 'warning');
+                    return;
+                }
+                
+                if (confirm(`هل أنت متأكد من حذف جميع الأدوية المنتهية (${outOfStockItems.length} دواء)؟`)) {
+                    const newInventory = inventory.filter(item => item.stock !== 'out');
+                    const removedCount = inventory.length - newInventory.length;
+                    
+                    await pharmacyRef.update({
+                        inventory: newInventory,
+                        updatedAt: new Date().toISOString()
+                    });
+                    
+                    // تحديث الـ state المحلي
+                    if (state.currentPharmacy) {
+                        state.currentPharmacy.inventory = newInventory;
+                    }
+                    
+                    // تحديث قائمة الصيدليات العامة
+                    const pharmacyIndex = state.pharmacies.findIndex(p => p.id === state.currentPharmacyId);
+                    if (pharmacyIndex !== -1) {
+                        state.pharmacies[pharmacyIndex].inventory = newInventory;
+                    }
+                    
+                    renderInventoryList(newInventory);
+                    showNotification('تم التنظيف', 
+                        `تم حذف ${removedCount} دواء منتهي من المخزون.`, 'success');
+                }
+            } catch (error) {
+                console.error('Error removing out of stock items:', error);
+                showNotification('خطأ', 'تعذر حذف الأدوية المنتهية', 'error');
             }
         }
 
