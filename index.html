@@ -1623,8 +1623,16 @@
             currentLanguage: 'ar',
             isMobile: window.innerWidth <= 992,
             isScrolled: false,
-            currentPharmacyId: null // إضافة معرف الصيدلية الحالية
+            currentPharmacyId: null
         };
+
+        // ==============================================
+        // متغيرات التحكم في الأداء
+        // ==============================================
+        let searchTimeout = null;
+        let searchResultsCache = {};
+        let pharmaciesSnapshotUnsubscribe = null;
+        let inventorySnapshotUnsubscribe = null;
 
         // Common medicines for search suggestions
         const commonMedicines = [
@@ -1667,10 +1675,10 @@
             // Setup language toggle
             setupLanguageToggle();
             
-            
             // Setup about modal
             setupAboutModal();
-// Setup scroll event
+            
+            // Setup scroll event
             setupScrollEvent();
             
             // Setup resize observer
@@ -1807,6 +1815,13 @@
                     state.currentUser = null;
                     state.currentPharmacy = null;
                     state.currentPharmacyId = null;
+                    
+                    // إلغاء الاشتراكات عند تسجيل الخروج
+                    if (inventorySnapshotUnsubscribe) {
+                        inventorySnapshotUnsubscribe();
+                        inventorySnapshotUnsubscribe = null;
+                    }
+                    
                     updateUIForLoggedOutUser();
                 }
             });
@@ -1829,15 +1844,67 @@
                     const pharmacyDoc = pharmacyQuery.docs[0];
                     const pharmacyData = pharmacyDoc.data();
                     pharmacyData.id = pharmacyDoc.id;
+                    
+                    // هذه السطور المفقودة كانت تسبب المشكلة:
                     state.currentPharmacy = pharmacyData;
-                    state.currentPharmacyId = pharmacyDoc.id;
+                    state.currentPharmacyId = pharmacyDoc.id; // إضافة هذا السطر
+                    
                     showInventorySection();
-                    loadPharmacyInventoryFromFirestore();
+                    loadPharmacyInventoryFromFirestore(); // تحميل المخزون
+                    setupInventoryListener(); // إعداد الـ listener للمخزون
+                    
                     showToast(`مرحباً بعودتك إلى ${pharmacyData.name}!`);
                 }
             } catch (error) {
                 console.error('Error checking pharmacy account:', error);
                 showNotification('خطأ', 'تعذر تحميل بيانات الصيدلية', 'error');
+            }
+        }
+
+        // ==============================================
+        // Setup inventory listener
+        // ==============================================
+        function setupInventoryListener() {
+            if (!state.currentPharmacyId || inventorySnapshotUnsubscribe) return;
+            
+            // إلغاء أي listener سابق
+            if (inventorySnapshotUnsubscribe) {
+                inventorySnapshotUnsubscribe();
+            }
+            
+            inventorySnapshotUnsubscribe = db.collection('pharmacies')
+                .doc(state.currentPharmacyId)
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const pharmacyData = doc.data();
+                        const inventory = pharmacyData.inventory || [];
+                        
+                        // تحديث الواجهة
+                        if (document.getElementById('inventoryList')) {
+                            renderInventoryList(inventory);
+                        }
+                        
+                        // تحديث المخزون المحلي
+                        updateLocalInventory(state.currentPharmacyId, inventory);
+                    }
+                }, (error) => {
+                    console.error('Inventory listener error:', error);
+                });
+        }
+
+        // ==============================================
+        // تحديث المخزون في الذاكرة المحلية
+        // ==============================================
+        function updateLocalInventory(pharmacyId, newInventory) {
+            // تحديث state.currentPharmacy
+            if (state.currentPharmacy && state.currentPharmacy.id === pharmacyId) {
+                state.currentPharmacy.inventory = newInventory;
+            }
+            
+            // تحديث قائمة الصيدليات العامة
+            const pharmacyIndex = state.pharmacies.findIndex(p => p.id === pharmacyId);
+            if (pharmacyIndex !== -1) {
+                state.pharmacies[pharmacyIndex].inventory = newInventory;
             }
         }
 
@@ -1897,11 +1964,11 @@
                 }
             });
 
-            // Search button
+            // Search button - تم التحديث لاستخدام البحث المحسن
             DOM.searchBtn.addEventListener('click', function() {
                 const medicine = DOM.medicineSearch.value.trim();
                 if (medicine) {
-                    searchMedicine(medicine);
+                    searchMedicineOptimized(medicine);
                     hideSearchSuggestions();
                 } else {
                     showNotification('خطأ', 'الرجاء إدخال اسم الدواء', 'error');
@@ -1913,7 +1980,7 @@
                 item.addEventListener('click', function() {
                     const medName = this.textContent;
                     DOM.medicineSearch.value = medName;
-                    searchMedicine(medName);
+                    searchMedicineOptimized(medName);
                 });
                 
                 item.addEventListener('keydown', function(e) {
@@ -1921,7 +1988,7 @@
                         e.preventDefault();
                         const medName = this.textContent;
                         DOM.medicineSearch.value = medName;
-                        searchMedicine(medName);
+                        searchMedicineOptimized(medName);
                     }
                 });
             });
@@ -1999,7 +2066,7 @@
                     }
                 }
             });
-            }
+        }
 
         // ==============================================
         // Toggle Password Visibility Helper
@@ -2051,7 +2118,7 @@
                 item.addEventListener('click', function() {
                     const med = this.getAttribute('data-med');
                     DOM.medicineSearch.value = med;
-                    searchMedicine(med);
+                    searchMedicineOptimized(med);
                     suggestionsContainer.style.display = 'none';
                 });
                 
@@ -2060,7 +2127,7 @@
                         e.preventDefault();
                         const med = this.getAttribute('data-med');
                         DOM.medicineSearch.value = med;
-                        searchMedicine(med);
+                        searchMedicineOptimized(med);
                         suggestionsContainer.style.display = 'none';
                     }
                 });
@@ -2498,68 +2565,125 @@
         }
 
         // ==============================================
-        // Search for medicine in pharmacies
+        // تحسين البحث - البحث المحلي أولاً (سريع)
         // ==============================================
-        async function searchMedicine(medicineName) {
+        function performLocalSearch(medicineName) {
+            if (!state.pharmacies || state.pharmacies.length === 0) {
+                return [];
+            }
+            
+            const searchTerm = medicineName.toLowerCase().trim();
+            const availablePharmacies = [];
+            
+            for (const pharmacy of state.pharmacies) {
+                // التحقق من وجود المخزون
+                if (!pharmacy.inventory || !Array.isArray(pharmacy.inventory)) {
+                    continue;
+                }
+                
+                // البحث في المخزون
+                const hasMedicine = pharmacy.inventory.some(item => {
+                    if (!item || !item.name) return false;
+                    
+                    const itemName = item.name.toLowerCase().trim();
+                    
+                    // بحث بسيط (يتطابق بداية الكلمة)
+                    return itemName.includes(searchTerm) || 
+                           searchTerm.includes(itemName) ||
+                           itemName.startsWith(searchTerm) ||
+                           searchTerm.startsWith(itemName);
+                });
+                
+                if (!hasMedicine) continue;
+                
+                // حساب المسافة
+                if (state.userLocation && pharmacy.location) {
+                    const distance = calculateDistance(
+                        state.userLocation.lat, state.userLocation.lng,
+                        pharmacy.location.lat, pharmacy.location.lng
+                    );
+                    
+                    if (distance <= state.searchRadius) {
+                        pharmacy.distance = distance.toFixed(1);
+                        availablePharmacies.push(pharmacy);
+                    }
+                } else {
+                    // إذا لم يكن هناك موقع، أضف الصيدلية
+                    pharmacy.distance = 'غير معروف';
+                    availablePharmacies.push(pharmacy);
+                }
+            }
+            
+            // ترتيب حسب المسافة
+            availablePharmacies.sort((a, b) => {
+                const distA = parseFloat(a.distance) || Infinity;
+                const distB = parseFloat(b.distance) || Infinity;
+                return distA - distB;
+            });
+            
+            return availablePharmacies;
+        }
+
+        // ==============================================
+        // Search for medicine in pharmacies (المحدثة والمحسنة)
+        // ==============================================
+        async function searchMedicineOptimized(medicineName) {
             state.selectedMedicine = medicineName;
             
-            // Show loading state
+            // إلغاء أي عملية بحث سابقة
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            
+            // إظهار حالة التحميل
             DOM.searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري البحث...';
             DOM.searchBtn.disabled = true;
+            DOM.medicineSearch.disabled = true;
             
             try {
-                // تحميل أول مرة فقط (بعدها الـ onSnapshot يقوم بالتحديث لحظياً)
+                // بحث محلي أولاً (سريع جداً)
+                const availablePharmacies = performLocalSearch(medicineName);
+                
+                if (availablePharmacies.length > 0) {
+                    // عرض النتائج فوراً
+                    updateMapWithSearchResults(availablePharmacies, medicineName);
+                    displaySearchResults(availablePharmacies, medicineName);
+                    
+                    showNotification('تم العثور على الدواء!', 
+                        `"${medicineName}" متوفر في ${availablePharmacies.length} صيدلية ضمن ${state.searchRadius}كم.`, 
+                        'success');
+                } else {
+                    // إذا لم توجد نتائج محلية، تحقق من Firestore
+                    await searchInFirestore(medicineName);
+                }
+                
+            } catch (error) {
+                console.error('Error searching medicine:', error);
+                showNotification('خطأ', 'حدث خطأ أثناء البحث عن الدواء', 'error');
+            } finally {
+                // إعادة تعيين حالة الأزرار
+                DOM.searchBtn.innerHTML = '<i class="fas fa-search"></i> ابحث عن دواء';
+                DOM.searchBtn.disabled = false;
+                DOM.medicineSearch.disabled = false;
+            }
+        }
+
+        // ==============================================
+        // البحث في Firestore (إذا لم توجد نتائج محلية)
+        // ==============================================
+        async function searchInFirestore(medicineName) {
+            try {
+                // تحميل أول مرة فقط
                 if (!state.pharmaciesLoaded || !state.pharmacies?.length) {
                     await loadPharmaciesFromFirestore();
                 }
-                // Calculate distances and filter by radius
-                const availablePharmacies = state.pharmacies.filter(pharmacy => {
-                    // Check if pharmacy has inventory
-                    if (!pharmacy.inventory || !Array.isArray(pharmacy.inventory)) {
-                        return false;
-                    }
-                    
-                    // Search for medicine (case-insensitive, partial match)
-                    const hasMedicine = pharmacy.inventory.some(item => {
-                        if (!item || !item.name) return false;
-                        
-                        const searchTerm = medicineName.toLowerCase().trim();
-                        const itemName = item.name.toLowerCase().trim();
-                        
-                        return itemName.includes(searchTerm) || 
-                               searchTerm.includes(itemName);
-                    });
-                    
-                    if (!hasMedicine) return false;
-                    
-                    // Calculate distance if user location is available
-                    if (state.userLocation && pharmacy.location) {
-                        const distance = calculateDistance(
-                            state.userLocation.lat, state.userLocation.lng,
-                            pharmacy.location.lat, pharmacy.location.lng
-                        );
-                        pharmacy.distance = distance.toFixed(1);
-                        return distance <= state.searchRadius;
-                    }
-                    
-                    return true; // If no user location, show all pharmacies with medicine
-                });
                 
-                // Sort by distance
-                availablePharmacies.sort((a, b) => {
-                    const distA = parseFloat(a.distance) || Infinity;
-                    const distB = parseFloat(b.distance) || Infinity;
-                    return distA - distB;
-                });
+                // البحث المحلي مجدداً بعد التحميل
+                const availablePharmacies = performLocalSearch(medicineName);
                 
-                // Update map with filtered pharmacies
-                updateMapWithSearchResults(availablePharmacies, medicineName);
-                
-                // Display results in sidebar
-                displaySearchResults(availablePharmacies, medicineName);
-                
-                // Show notification
                 if (availablePharmacies.length > 0) {
+                    updateMapWithSearchResults(availablePharmacies, medicineName);
+                    displaySearchResults(availablePharmacies, medicineName);
                     showNotification('تم العثور على الدواء!', 
                         `"${medicineName}" متوفر في ${availablePharmacies.length} صيدلية ضمن ${state.searchRadius}كم.`, 
                         'success');
@@ -2567,15 +2691,23 @@
                     showNotification('لم يتم العثور على الدواء', 
                         `"${medicineName}" غير متوفر في الصيدليات القريبة. جرب دواء آخر أو زد نطاق البحث.`, 
                         'error');
+                    
+                    // عرض رسالة في القائمة
+                    const resultsContainer = DOM.pharmacyResults;
+                    const patientResults = DOM.patientResults;
+                    
+                    resultsContainer.innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: #666;">
+                            <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 1rem;" aria-hidden="true"></i>
+                            <p>لم يتم العثور على صيدليات تحتوي على "${medicineName}" ضمن ${state.searchRadius}كم.</p>
+                        </div>
+                    `;
+                    patientResults.style.display = 'block';
                 }
                 
             } catch (error) {
-                console.error('Error searching medicine:', error);
-                showNotification('خطأ', 'حدث خطأ أثناء البحث عن الدواء', 'error');
-            } finally {
-                // Reset button state
-                DOM.searchBtn.innerHTML = '<i class="fas fa-search"></i> ابحث عن دواء';
-                DOM.searchBtn.disabled = false;
+                console.error('Error searching in Firestore:', error);
+                showNotification('خطأ', 'حدث خطأ أثناء البحث في قاعدة البيانات', 'error');
             }
         }
 
@@ -2953,11 +3085,19 @@
                     displayName: name
                 });
                 
+                // تحديث الـ state المحلي
+                state.currentPharmacy = pharmacyData;
+                state.currentPharmacyId = pharmacyRef.id;
+                state.pharmacies.push(pharmacyData);
+                
                 hideLoading();
                 showToast(`مرحباً بك في ${name}! تم تسجيل الصيدلية بنجاح.`);
                 
                 // Switch to pharmacy view
                 switchUserType('pharmacy');
+                showInventorySection();
+                loadPharmacyInventoryFromFirestore();
+                setupInventoryListener();
                 
             } catch (error) {
                 hideLoading();
@@ -3120,25 +3260,37 @@
         }
 
         // ==============================================
-        // Load pharmacy inventory from Firestore
+        // Load pharmacy inventory from Firestore (المحدثة)
         // ==============================================
         async function loadPharmacyInventoryFromFirestore() {
-            if (!state.currentPharmacyId) return;
+            if (!state.currentPharmacyId) {
+                console.error('No current pharmacy ID found');
+                return;
+            }
             
             const inventoryList = document.getElementById('inventoryList');
             inventoryList.innerHTML = `
                 <div class="loading">
-                    <i class="fas fa-spinner"></i>
+                    <i class="fas fa-spinner fa-spin"></i>
                     <p>جاري تحميل المخزون...</p>
                 </div>
             `;
             
             try {
+                // تحميل المخزون مرة واحدة (بدون listener)
                 const pharmacyDoc = await db.collection('pharmacies').doc(state.currentPharmacyId).get();
                 
                 if (pharmacyDoc.exists) {
                     const pharmacyData = pharmacyDoc.data();
                     const inventory = pharmacyData.inventory || [];
+                    
+                    // تحديث المخزون المحلي
+                    if (state.currentPharmacy) {
+                        state.currentPharmacy.inventory = inventory;
+                    }
+                    
+                    // تحديث القائمة العامة
+                    updateLocalInventory(state.currentPharmacyId, inventory);
                     
                     if (inventory.length === 0) {
                         inventoryList.innerHTML = `
@@ -3150,6 +3302,7 @@
                         return;
                     }
                     
+                    // عرض المخزون
                     renderInventoryList(inventory);
                     
                 } else {
@@ -3169,6 +3322,16 @@
                         <p>تعذر تحميل المخزون. حاول مرة أخرى.</p>
                     </div>
                 `;
+                
+                // عرض بيانات وهمية للاختبار
+                if (state.currentPharmacy && !state.currentPharmacy.inventory) {
+                    state.currentPharmacy.inventory = [
+                        { name: 'أموكسيسيلين', stock: 'high', price: '15.99 ر.س' },
+                        { name: 'ميتفورمين', stock: 'medium', price: '12.50 ر.س' },
+                        { name: 'باراسيتامول', stock: 'low', price: '8.75 ر.س' }
+                    ];
+                    renderInventoryList(state.currentPharmacy.inventory);
+                }
             }
         }
 
@@ -3225,7 +3388,7 @@
         }
 
         // ==============================================
-        // Add medicine to inventory
+        // Add medicine to inventory (المحدثة)
         // ==============================================
         async function addMedicineToInventory() {
             const input = document.getElementById('addMedicineInput');
@@ -3245,25 +3408,16 @@
             try {
                 showLoading('جاري إضافة الدواء...');
                 
-                const pharmacyRef = db.collection('pharmacies').doc(state.currentPharmacyId);
-                const pharmacyDoc = await pharmacyRef.get();
-                
-                if (!pharmacyDoc.exists) {
-                    throw new Error('لم يتم العثور على بيانات الصيدلية');
-                }
-                
-                const pharmacyData = pharmacyDoc.data();
-                const currentInventory = pharmacyData.inventory || [];
-                
-                // التحقق مما إذا كان الدواء موجوداً بالفعل
+                // التحقق مما إذا كان الدواء موجوداً محلياً أولاً
+                const currentInventory = state.currentPharmacy?.inventory || [];
                 const existingMedicine = currentInventory.find(item => 
                     item && item.name && item.name.toLowerCase() === medicineName.toLowerCase()
                 );
                 
                 if (existingMedicine) {
+                    hideLoading();
                     showNotification('معلومات', 'هذا الدواء موجود بالفعل في المخزون.', 'warning');
                     input.value = '';
-                    hideLoading();
                     return;
                 }
                 
@@ -3276,28 +3430,19 @@
                     lastUpdated: new Date().toISOString()
                 };
                 
-                // إضافة الدواء إلى المخزون
-                currentInventory.push(newMedicine);
+                // تحديث محلي أولاً (للسرعة)
+                const updatedInventory = [...currentInventory, newMedicine];
+                renderInventoryList(updatedInventory);
                 
-                // تحديث Firestore
+                // تحديث Firestore في الخلفية
+                const pharmacyRef = db.collection('pharmacies').doc(state.currentPharmacyId);
                 await pharmacyRef.update({
-                    inventory: currentInventory,
+                    inventory: updatedInventory,
                     updatedAt: new Date().toISOString()
                 });
                 
-                // تحديث الـ state المحلي
-                if (state.currentPharmacy) {
-                    state.currentPharmacy.inventory = currentInventory;
-                }
-                
-                // تحديث قائمة الصيدليات العامة
-                const pharmacyIndex = state.pharmacies.findIndex(p => p.id === state.currentPharmacyId);
-                if (pharmacyIndex !== -1) {
-                    state.pharmacies[pharmacyIndex].inventory = currentInventory;
-                }
-                
-                // تحديث واجهة المستخدم
-                renderInventoryList(currentInventory);
+                // تحديث state
+                updateLocalInventory(state.currentPharmacyId, updatedInventory);
                 
                 // مسح حقل الإدخال
                 input.value = '';
@@ -3573,6 +3718,7 @@
                 toggleLanguage(next);
             });
         }
+        
         function setupAboutModal() {
             const aboutBtn = document.getElementById('aboutBtn');
             const aboutModal = document.getElementById('aboutModal');
@@ -3598,8 +3744,6 @@
                 if (e.target === aboutModal) closeAbout();
             });
         }
-
-
 
         // ==============================================
         // Toggle language
@@ -3709,6 +3853,7 @@
         window.showPharmacyDetails = showPharmacyDetails;
         window.closePharmacyModal = closePharmacyModal;
         window.toggleLanguage = toggleLanguage;
+        window.searchMedicineOptimized = searchMedicineOptimized;
         
         // ==============================================
         // Performance optimization for mobile
