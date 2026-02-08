@@ -1290,6 +1290,9 @@
                     </div>
                 </div>
                 <div class="user-controls">
+                    <button class="btn btn-outline" id="aboutBtn">
+                        <i class="fas fa-circle-info" aria-hidden="true"></i> عن الخدمة
+                    </button>
                     <button aria-label="تبديل اللغة" class="btn btn-outline" id="langToggleBtn">English</button>
                     <div class="user-info" id="userInfo" style="display: none;">
                         <div class="user-avatar" id="userAvatar" aria-hidden="true">م</div>
@@ -1497,6 +1500,47 @@
         </div>
     </div>
 
+    
+    <!-- About Service Modal -->
+    <div class="modal" id="aboutModal" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="aboutTitle">تعريف بالخدمة</h2>
+                <button class="close-modal" id="closeAboutModal" aria-label="إغلاق النافذة">×</button>
+            </div>
+            <div class="modal-body" style="line-height: 1.9;">
+                <p><strong>شعارنا :</strong> "دواؤك ليس بعيداً.. نحن نربطك بالصيدلية الأقرب."</p>
+
+                <h3 style="margin-top: 1rem;">1. الرؤية العامة (The Concept)</h3>
+                <p>تطبيق منصة ذكية تعمل كحلقة وصل تقنية فورية بين المرضى والصيدليات. تهدف الفكرة إلى حل مشكلة "رحلة البحث الشاقة" عن الأدوية، خاصة الناقصة منها أو أدوية الأمراض المزمنة، عبر توفير قاعدة بيانات لحظية مدعومة بنظام تحديد المواقع (GPS).</p>
+
+                <h3 style="margin-top: 1rem;">2. الميزات الأساسية (Core Features)</h3>
+                <ul style="margin: 0.5rem 1.2rem 0 0;">
+                    <li><strong>البحث الذكي:</strong> إمكانية البحث باسم الدواء (العلمي أو التجاري) أو عبر تصوير الروشتة (باستخدام تقنية الـ OCR لتمييز النصوص).</li>
+                    <li><strong>نظام التوفر اللحظي:</strong> يرسل التطبيق طلبك للصيدليات المحيطة في دائرة قطرها (مثلاً 5-10 كم)، وتصلك إشعارات فورية من الصيدليات التي يتوفر لديها الدواء.</li>
+                    <li><strong>الخريطة التفاعلية:</strong> عرض الصيدليات التي تملك الدواء على الخريطة مع توضيح المسافة والوقت المستغرق للوصول.</li>
+                    <li><strong>الحجز المؤقت:</strong> ميزة "احجز دوائي" لمنع نفاد الكمية قبل وصولك للصيدلية (لفترة زمنية محددة).</li>
+                    <li><strong>بدائل الدواء:</strong> في حال عدم التوفر، يقترح التطبيق البدائل التي تحتوي على نفس المادة الفعالة (بعد استشارة الصيدلي).</li>
+                </ul>
+
+                <h3 style="margin-top: 1rem;">3. رحلة المستخدم (User Journey)</h3>
+                <ul style="margin: 0.5rem 1.2rem 0 0;">
+                    <li><strong>المريض:</strong> يفتح التطبيق، يكتب اسم الدواء، ويحدد النطاق الجغرافي.</li>
+                    <li><strong>النظام:</strong> يبحث في مخزون الصيدليات المشتركة أو يرسل "نداءً" للصيادلة في المنطقة.</li>
+                    <li><strong>الصيدلي:</strong> يستلم تنبيهاً بوجود طلب، يؤكد التوفر بضغطة زر.</li>
+                    <li><strong>المريض:</strong> يستلم إشعاراً بالعثور على الدواء مع "لوكيشن" الصيدلية ورقم التواصل.</li>
+                </ul>
+
+                <h3 style="margin-top: 1rem;">4. القيمة المضافة (Value Proposition)</h3>
+                <ul style="margin: 0.5rem 1.2rem 0 0;">
+                    <li><strong>للمريض:</strong> توفير الجهد والوقت والمال المستهلك في التنقل بين الصيدليات.</li>
+                    <li><strong>للصيدلي:</strong> زيادة مبيعات الصيدلية، والوصول لعملاء جدد خارج النطاق المباشر للمحل، وإدارة أفضل للمخزون الراكد.</li>
+                    <li><strong>للمجتمع:</strong> المساهمة في تقليل أزمات نقص الأدوية من خلال توزيع معلومات التوفر بذكاء.</li>
+                </ul>
+            </div> 
+        </div>
+    </div>
+
     <!-- Notification -->
     <div class="notification" id="notification" role="alert" aria-live="polite">
         <i class="fas fa-info-circle" id="notificationIcon" style="font-size: 1.2rem;" aria-hidden="true"></i>
@@ -1568,6 +1612,7 @@
             currentUser: null,
             currentPharmacy: null,
             pharmacies: [],
+            pharmaciesLoaded: false,
             map: null,
             markers: [],
             userMarker: null,
@@ -1622,7 +1667,10 @@
             // Setup language toggle
             setupLanguageToggle();
             
-            // Setup scroll event
+            
+            // Setup about modal
+            setupAboutModal();
+// Setup scroll event
             setupScrollEvent();
             
             // Setup resize observer
@@ -1833,10 +1881,9 @@
             });
 
             // Medicine search with suggestions
-            DOM.medicineSearch.addEventListener('input', function() {
-                showSearchSuggestions(this.value);
-            });
-            
+            DOM.medicineSearch.addEventListener('input', debounce(function() {
+                showSearchSuggestions(DOM.medicineSearch.value);
+            }, 150));
             DOM.medicineSearch.addEventListener('focus', function() {
                 if (this.value.trim() !== '') {
                     showSearchSuggestions(this.value);
@@ -1941,11 +1988,18 @@
             
             // Keyboard navigation for modal
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && DOM.modal.style.display === 'flex') {
-                    closePharmacyModal();
+                if (e.key === 'Escape') {
+                    if (DOM.modal.style.display === 'flex') {
+                        closePharmacyModal();
+                    }
+                    const aboutModal = document.getElementById('aboutModal');
+                    if (aboutModal && aboutModal.style.display === 'flex') {
+                        aboutModal.style.display = 'none';
+                        document.body.style.overflow = '';
+                    }
                 }
             });
-        }
+            }
 
         // ==============================================
         // Toggle Password Visibility Helper
@@ -2277,6 +2331,7 @@
                 // Show all pharmacies on map
                 showAllPharmacies();
                 renderRecentPharmacies();
+                state.pharmaciesLoaded = true;
                 hideLoading();
                 
             } catch (error) {
@@ -2453,9 +2508,10 @@
             DOM.searchBtn.disabled = true;
             
             try {
-                // تحديث قائمة الصيدليات أولاً
-                await loadPharmaciesFromFirestore();
-                
+                // تحميل أول مرة فقط (بعدها الـ onSnapshot يقوم بالتحديث لحظياً)
+                if (!state.pharmaciesLoaded || !state.pharmacies?.length) {
+                    await loadPharmaciesFromFirestore();
+                }
                 // Calculate distances and filter by radius
                 const availablePharmacies = state.pharmacies.filter(pharmacy => {
                     // Check if pharmacy has inventory
@@ -3517,6 +3573,33 @@
                 toggleLanguage(next);
             });
         }
+        function setupAboutModal() {
+            const aboutBtn = document.getElementById('aboutBtn');
+            const aboutModal = document.getElementById('aboutModal');
+            const closeBtn = document.getElementById('closeAboutModal');
+
+            if (!aboutBtn || !aboutModal || !closeBtn) return;
+
+            function openAbout() {
+                aboutModal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                setTimeout(() => closeBtn.focus(), 50);
+            }
+
+            function closeAbout() {
+                aboutModal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+
+            aboutBtn.addEventListener('click', openAbout);
+            closeBtn.addEventListener('click', closeAbout);
+
+            aboutModal.addEventListener('click', function(e) {
+                if (e.target === aboutModal) closeAbout();
+            });
+        }
+
+
 
         // ==============================================
         // Toggle language
