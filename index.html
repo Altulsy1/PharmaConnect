@@ -22,7 +22,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     
     <style>
-        /* ===== جميع الأنماط السابقة محتفظ بها مع تصحيح الأخطاء ===== */
+        /* ===== جميع الأنماط محتفظ بها كما هي ===== */
         :root {
             --primary-gradient: linear-gradient(135deg, #2a9d8f 0%, #21867a 100%);
             --secondary-gradient: linear-gradient(135deg, #264653 0%, #1a3340 100%);
@@ -82,7 +82,7 @@
             padding-top: var(--safe-top);
             padding-bottom: var(--safe-bottom);
         }
-        /* باقي الأنماط كما هي مع تصحيح الخطأ في var(--shadow-lg) */
+        /* باقي الأنماط كما هي (محذوفة للاختصار ولكنها موجودة في الملف الأصلي) */
         .search-suggestions {
             position: absolute;
             top: 100%;
@@ -109,7 +109,6 @@
         .search-suggestion-item:hover {
             background: var(--bg-color);
         }
-        /* جميع الأنماط الأخرى محتفظ بها كما هي - تم حذفها للاختصار لكنها موجودة في الملف الأصلي */
         .app-header { background: var(--primary-gradient); color: white; position: sticky; top: 0; z-index: 100; padding: 0.5rem 0; padding-top: calc(0.5rem + var(--safe-top)); backdrop-filter: blur(10px); box-shadow: var(--shadow-md); transition: var(--transition-base); }
         .header-content { max-width: 1200px; margin: 0 auto; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         .logo-wrapper { display: flex; align-items: center; gap: 10px; flex: 1; }
@@ -275,7 +274,17 @@
         };
 
         // ==============================================
-        // دوال مساعدة لإنشاء HTML آمنة (بدون innerHTML مباشر)
+        // إحداثيات مصر (القاهرة والشرقية)
+        // ==============================================
+        const EGYPT_COORDINATES = {
+            cairo: { lat: 30.0444, lng: 31.2357 },
+            zagazig: { lat: 30.4167, lng: 31.5667 },  // الشرقية
+            cairoNasr: { lat: 30.0481, lng: 31.3405 },
+            cairoMaadi: { lat: 29.9667, lng: 31.2500 }
+        };
+
+        // ==============================================
+        // دوال مساعدة لإنشاء HTML آمنة
         // ==============================================
         function escapeHtml(str) {
             if (!str) return '';
@@ -366,10 +375,10 @@
         function hideLoading() { document.getElementById('loadingScreen').style.display = 'none'; }
 
         // ==============================================
-        // تهيئة الخريطة والموقع
+        // تهيئة الخريطة والموقع (باستخدام إحداثيات مصر)
         // ==============================================
         async function initializeMap() {
-            state.map = L.map('map', { zoomControl: false }).setView([24.7136, 46.6753], 12);
+            state.map = L.map('map', { zoomControl: false }).setView([EGYPT_COORDINATES.cairo.lat, EGYPT_COORDINATES.cairo.lng], 12);
             L.control.zoom({ position: 'bottomright' }).addTo(state.map);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: 'OpenStreetMap', maxZoom: 19 }).addTo(state.map);
         }
@@ -388,15 +397,16 @@
             } catch (err) {
                 setDefaultLocation();
                 hideLoading();
-                showToast('تعذر تحديد الموقع، تم استخدام موقع افتراضي', 'warning');
+                showToast('تعذر تحديد الموقع، تم استخدام موقع القاهرة الافتراضي', 'warning');
             }
         }
         function setDefaultLocation() {
-            state.userLocation = { lat: 24.7136, lng: 46.6753 };
+            // استخدام القاهرة كموقع افتراضي
+            state.userLocation = { lat: EGYPT_COORDINATES.cairo.lat, lng: EGYPT_COORDINATES.cairo.lng };
             state.map.setView([state.userLocation.lat, state.userLocation.lng], 12);
             addUserMarker();
             updateRadiusCircle();
-            document.getElementById('locationText').textContent = 'الرياض (موقع افتراضي)';
+            document.getElementById('locationText').textContent = 'القاهرة (موقع افتراضي)';
         }
         function addUserMarker() {
             if (state.userMarker) state.map.removeLayer(state.userMarker);
@@ -410,7 +420,7 @@
         }
 
         // ==============================================
-        // تحميل الصيدليات (Firebase + Mock)
+        // تحميل الصيدليات (Firebase + Mock) مع تحديث المواقع لمصر
         // ==============================================
         async function loadPharmacies() {
             try {
@@ -429,10 +439,56 @@
             }
         }
         function loadMockData() {
+            // بيانات صيدليات تجريبية في القاهرة والشرقية
             state.pharmacies = [
-                { id: 'ph1', name: 'صيدلية الصحة', address: 'شارع الملك فهد، الرياض', phone: '0555555555', location: { lat: 24.7136, lng: 46.6753 }, registeredAt: new Date().toISOString(), inventory: [{ name: 'أموكسيسيلين', stock: 'high', price: '15.99 ر.س' }] },
-                { id: 'ph2', name: 'صيدلية النخبة', address: 'حي النخيل، الرياض', phone: '0566666666', location: { lat: 24.8036, lng: 46.6438 }, registeredAt: new Date().toISOString(), inventory: [{ name: 'أموكسيسيلين', stock: 'low', price: '16.50 ر.س' }] },
-                { id: 'ph3', name: 'صيدلية السلام', address: 'حي الملقا، الرياض', phone: '0577777777', location: { lat: 24.7580, lng: 46.6855 }, registeredAt: new Date().toISOString(), inventory: [{ name: 'فينتولين', stock: 'high', price: '30.25 ر.س' }] }
+                {
+                    id: 'ph1',
+                    name: 'صيدلية النيل',
+                    address: 'ميدان التحرير، القاهرة',
+                    phone: '01001234567',
+                    location: EGYPT_COORDINATES.cairo,
+                    registeredAt: new Date().toISOString(),
+                    inventory: [
+                        { name: 'أموكسيسيلين', stock: 'high', price: '25.00 ج.م' },
+                        { name: 'ميتفورمين', stock: 'medium', price: '18.50 ج.م' }
+                    ]
+                },
+                {
+                    id: 'ph2',
+                    name: 'صيدلية الشرقية',
+                    address: 'شارع الجامع، الزقازيق، الشرقية',
+                    phone: '01008765432',
+                    location: EGYPT_COORDINATES.zagazig,
+                    registeredAt: new Date().toISOString(),
+                    inventory: [
+                        { name: 'أموكسيسيلين', stock: 'low', price: '26.00 ج.م' },
+                        { name: 'باراسيتامول', stock: 'high', price: '12.00 ج.م' }
+                    ]
+                },
+                {
+                    id: 'ph3',
+                    name: 'صيدلية مدينة نصر',
+                    address: 'شارع عباس العقاد، مدينة نصر، القاهرة',
+                    phone: '01002345678',
+                    location: EGYPT_COORDINATES.cairoNasr,
+                    registeredAt: new Date().toISOString(),
+                    inventory: [
+                        { name: 'فينتولين', stock: 'high', price: '45.00 ج.م' },
+                        { name: 'أوميبرازول', stock: 'medium', price: '28.00 ج.م' }
+                    ]
+                },
+                {
+                    id: 'ph4',
+                    name: 'صيدلة المعادي',
+                    address: 'شارع 9، المعادي، القاهرة',
+                    phone: '01009876543',
+                    location: EGYPT_COORDINATES.cairoMaadi,
+                    registeredAt: new Date().toISOString(),
+                    inventory: [
+                        { name: 'لوسارتان', stock: 'high', price: '32.50 ج.م' },
+                        { name: 'أسبرين', stock: 'medium', price: '8.00 ج.م' }
+                    ]
+                }
             ];
         }
         function clearMarkers() { state.markers.forEach(m => state.map.removeLayer(m)); state.markers = []; }
@@ -452,7 +508,7 @@
         }
 
         // ==============================================
-        // البحث عن الدواء
+        // البحث عن الدواء (نفس الكود)
         // ==============================================
         function searchMedicine(medicineName) {
             if (!medicineName) return;
@@ -534,7 +590,7 @@
         function closePharmacyModal() { document.getElementById('pharmacyModal').style.display = 'none'; }
 
         // ==============================================
-        // إدارة المخزون (Firebase)
+        // إدارة المخزون (نفس الكود)
         // ==============================================
         async function loadInventory() {
             if (!state.currentPharmacyId) return;
@@ -562,7 +618,7 @@
                 const doc = await ref.get();
                 const inv = doc.data().inventory || [];
                 if (inv.some(i => i.name.toLowerCase() === name.toLowerCase())) { hideLoading(); showToast('الدواء موجود بالفعل', 'warning'); return; }
-                inv.push({ name, stock: 'high', price: (Math.random()*40+10).toFixed(2)+' ر.س', addedAt: new Date().toISOString() });
+                inv.push({ name, stock: 'high', price: (Math.random()*40+10).toFixed(2)+' ج.م', addedAt: new Date().toISOString() });
                 await ref.update({ inventory: inv, updatedAt: new Date().toISOString() });
                 document.getElementById('addMedicineInput').value = '';
                 hideLoading();
@@ -630,7 +686,7 @@
                 showLoading('جاري التسجيل...');
                 const cred = await auth.createUserWithEmailAndPassword(email, pwd);
                 await cred.user.updateProfile({ displayName: name });
-                const phData = { name, email, phone, address, location: state.userLocation || { lat:24.7136,lng:46.6753 }, inventory: [], ownerId: cred.user.uid, registeredAt: new Date().toISOString() };
+                const phData = { name, email, phone, address, location: state.userLocation || EGYPT_COORDINATES.cairo, inventory: [], ownerId: cred.user.uid, registeredAt: new Date().toISOString() };
                 const docRef = await db.collection('pharmacies').add(phData);
                 state.currentPharmacy = { id: docRef.id, ...phData };
                 state.currentPharmacyId = docRef.id;
